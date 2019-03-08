@@ -218,7 +218,16 @@ namespace Google.Protobuf
         /// <returns>A codec for the given tag.</returns>
         public static FieldCodec<string> ForString(uint tag, string defaultValue)
         {
-            return new FieldCodec<string>(input => input.ReadString(), (output, value) => output.WriteString(value), CodedOutputStream.ComputeStringSize, tag, defaultValue);
+            return new FieldCodec<string>(
+                input => input.ReadString(),
+                (output, value) => output.WriteString(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) => input.ReadString(),
+                (ref CodedOutputWriter output, string value) => output.WriteString(value),
+#endif
+                CodedOutputStream.ComputeStringSize,
+                tag,
+                defaultValue);
         }
 
         /// <summary>
@@ -229,7 +238,16 @@ namespace Google.Protobuf
         /// <returns>A codec for the given tag.</returns>
         public static FieldCodec<ByteString> ForBytes(uint tag, ByteString defaultValue)
         {
-            return new FieldCodec<ByteString>(input => input.ReadBytes(), (output, value) => output.WriteBytes(value), CodedOutputStream.ComputeBytesSize, tag, defaultValue);
+            return new FieldCodec<ByteString>(
+                input => input.ReadBytes(),
+                (output, value) => output.WriteBytes(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) => input.ReadBytes(),
+                (ref CodedOutputWriter output, ByteString value) => output.WriteBytes(value),
+#endif
+                CodedOutputStream.ComputeBytesSize,
+                tag,
+                defaultValue);
         }
 
         /// <summary>
@@ -240,7 +258,16 @@ namespace Google.Protobuf
         /// <returns>A codec for the given tag.</returns>
         public static FieldCodec<bool> ForBool(uint tag, bool defaultValue)
         {
-            return new FieldCodec<bool>(input => input.ReadBool(), (output, value) => output.WriteBool(value), CodedOutputStream.BoolSize, tag, defaultValue);
+            return new FieldCodec<bool>(
+                input => input.ReadBool(),
+                (output, value) => output.WriteBool(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) => input.ReadBool(),
+                (ref CodedOutputWriter output, bool value) => output.WriteBool(value),
+#endif
+                CodedOutputStream.BoolSize,
+                tag,
+                defaultValue);
         }
 
         /// <summary>
@@ -251,7 +278,16 @@ namespace Google.Protobuf
         /// <returns>A codec for the given tag.</returns>
         public static FieldCodec<int> ForInt32(uint tag, int defaultValue)
         {
-            return new FieldCodec<int>(input => input.ReadInt32(), (output, value) => output.WriteInt32(value), CodedOutputStream.ComputeInt32Size, tag, defaultValue);
+            return new FieldCodec<int>(
+                input => input.ReadInt32(),
+                (output, value) => output.WriteInt32(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) => input.ReadInt32(),
+                (ref CodedOutputWriter output, int value) => output.WriteInt32(value),
+#endif
+                CodedOutputStream.ComputeInt32Size,
+                tag,
+                defaultValue);
         }
 
         /// <summary>
@@ -262,7 +298,16 @@ namespace Google.Protobuf
         /// <returns>A codec for the given tag.</returns>
         public static FieldCodec<int> ForSInt32(uint tag, int defaultValue)
         {
-            return new FieldCodec<int>(input => input.ReadSInt32(), (output, value) => output.WriteSInt32(value), CodedOutputStream.ComputeSInt32Size, tag, defaultValue);
+            return new FieldCodec<int>(
+                input => input.ReadSInt32(),
+                (output, value) => output.WriteSInt32(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) => input.ReadSInt32(),
+                (ref CodedOutputWriter output, int value) => output.WriteSInt32(value),
+#endif
+                CodedOutputStream.ComputeSInt32Size,
+                tag,
+                defaultValue);
         }
 
         /// <summary>
@@ -273,7 +318,16 @@ namespace Google.Protobuf
         /// <returns>A codec for the given tag.</returns>
         public static FieldCodec<uint> ForFixed32(uint tag, uint defaultValue)
         {
-            return new FieldCodec<uint>(input => input.ReadFixed32(), (output, value) => output.WriteFixed32(value), 4, tag, defaultValue);
+            return new FieldCodec<uint>(
+                input => input.ReadFixed32(),
+                (output, value) => output.WriteFixed32(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) => input.ReadFixed32(),
+                (ref CodedOutputWriter output, uint value) => output.WriteFixed32(value),
+#endif
+                4,
+                tag,
+                defaultValue);
         }
 
         /// <summary>
@@ -284,7 +338,16 @@ namespace Google.Protobuf
         /// <returns>A codec for the given tag.</returns>
         public static FieldCodec<int> ForSFixed32(uint tag, int defaultValue)
         {
-            return new FieldCodec<int>(input => input.ReadSFixed32(), (output, value) => output.WriteSFixed32(value), 4, tag, defaultValue);
+            return new FieldCodec<int>(
+                input => input.ReadSFixed32(),
+                (output, value) => output.WriteSFixed32(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) => input.ReadSFixed32(),
+                (ref CodedOutputWriter output, int value) => output.WriteSFixed32(value),
+#endif
+                4,
+                tag,
+                defaultValue);
         }
 
         /// <summary>
@@ -295,7 +358,16 @@ namespace Google.Protobuf
         /// <returns>A codec for the given tag.</returns>
         public static FieldCodec<uint> ForUInt32(uint tag, uint defaultValue)
         {
-            return new FieldCodec<uint>(input => input.ReadUInt32(), (output, value) => output.WriteUInt32(value), CodedOutputStream.ComputeUInt32Size, tag, defaultValue);
+            return new FieldCodec<uint>(
+                input => input.ReadUInt32(),
+                (output, value) => output.WriteUInt32(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) => input.ReadUInt32(),
+                (ref CodedOutputWriter output, uint value) => output.WriteUInt32(value),
+#endif
+                CodedOutputStream.ComputeUInt32Size,
+                tag,
+                defaultValue);
         }
 
         /// <summary>
@@ -306,7 +378,16 @@ namespace Google.Protobuf
         /// <returns>A codec for the given tag.</returns>
         public static FieldCodec<long> ForInt64(uint tag, long defaultValue)
         {
-            return new FieldCodec<long>(input => input.ReadInt64(), (output, value) => output.WriteInt64(value), CodedOutputStream.ComputeInt64Size, tag, defaultValue);
+            return new FieldCodec<long>(
+                input => input.ReadInt64(),
+                (output, value) => output.WriteInt64(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) => input.ReadInt64(),
+                (ref CodedOutputWriter output, long value) => output.WriteInt64(value),
+#endif
+                CodedOutputStream.ComputeInt64Size,
+                tag,
+                defaultValue);
         }
 
         /// <summary>
@@ -317,7 +398,16 @@ namespace Google.Protobuf
         /// <returns>A codec for the given tag.</returns>
         public static FieldCodec<long> ForSInt64(uint tag, long defaultValue)
         {
-            return new FieldCodec<long>(input => input.ReadSInt64(), (output, value) => output.WriteSInt64(value), CodedOutputStream.ComputeSInt64Size, tag, defaultValue);
+            return new FieldCodec<long>(
+                input => input.ReadSInt64(),
+                (output, value) => output.WriteSInt64(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) => input.ReadSInt64(),
+                (ref CodedOutputWriter output, long value) => output.WriteSInt64(value),
+#endif
+                CodedOutputStream.ComputeSInt64Size,
+                tag,
+                defaultValue);
         }
 
         /// <summary>
@@ -328,7 +418,16 @@ namespace Google.Protobuf
         /// <returns>A codec for the given tag.</returns>
         public static FieldCodec<ulong> ForFixed64(uint tag, ulong defaultValue)
         {
-            return new FieldCodec<ulong>(input => input.ReadFixed64(), (output, value) => output.WriteFixed64(value), 8, tag, defaultValue);
+            return new FieldCodec<ulong>(
+                input => input.ReadFixed64(),
+                (output, value) => output.WriteFixed64(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) => input.ReadFixed64(),
+                (ref CodedOutputWriter output, ulong value) => output.WriteFixed64(value),
+#endif
+                8,
+                tag,
+                defaultValue);
         }
 
         /// <summary>
@@ -339,7 +438,16 @@ namespace Google.Protobuf
         /// <returns>A codec for the given tag.</returns>
         public static FieldCodec<long> ForSFixed64(uint tag, long defaultValue)
         {
-            return new FieldCodec<long>(input => input.ReadSFixed64(), (output, value) => output.WriteSFixed64(value), 8, tag, defaultValue);
+            return new FieldCodec<long>(
+                input => input.ReadSFixed64(),
+                (output, value) => output.WriteSFixed64(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) => input.ReadSFixed64(),
+                (ref CodedOutputWriter output, long value) => output.WriteSFixed64(value),
+#endif
+                8,
+                tag,
+                defaultValue);
         }
 
         /// <summary>
@@ -350,7 +458,16 @@ namespace Google.Protobuf
         /// <returns>A codec for the given tag.</returns>
         public static FieldCodec<ulong> ForUInt64(uint tag, ulong defaultValue)
         {
-            return new FieldCodec<ulong>(input => input.ReadUInt64(), (output, value) => output.WriteUInt64(value), CodedOutputStream.ComputeUInt64Size, tag, defaultValue);
+            return new FieldCodec<ulong>(
+                input => input.ReadUInt64(),
+                (output, value) => output.WriteUInt64(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) => input.ReadUInt64(),
+                (ref CodedOutputWriter output, ulong value) => output.WriteUInt64(value),
+#endif
+                CodedOutputStream.ComputeUInt64Size,
+                tag,
+                defaultValue);
         }
 
         /// <summary>
@@ -361,7 +478,16 @@ namespace Google.Protobuf
         /// <returns>A codec for the given tag.</returns>
         public static FieldCodec<float> ForFloat(uint tag, float defaultValue)
         {
-            return new FieldCodec<float>(input => input.ReadFloat(), (output, value) => output.WriteFloat(value), CodedOutputStream.FloatSize, tag, defaultValue);
+            return new FieldCodec<float>(
+                input => input.ReadFloat(),
+                (output, value) => output.WriteFloat(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) => input.ReadFloat(),
+                (ref CodedOutputWriter output, float value) => output.WriteFloat(value),
+#endif
+                CodedOutputStream.FloatSize,
+                tag,
+                defaultValue);
         }
 
         /// <summary>
@@ -372,7 +498,16 @@ namespace Google.Protobuf
         /// <returns>A codec for the given tag.</returns>
         public static FieldCodec<double> ForDouble(uint tag, double defaultValue)
         {
-            return new FieldCodec<double>(input => input.ReadDouble(), (output, value) => output.WriteDouble(value), CodedOutputStream.DoubleSize, tag, defaultValue);
+            return new FieldCodec<double>(
+                input => input.ReadDouble(),
+                (output, value) => output.WriteDouble(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) => input.ReadDouble(),
+                (ref CodedOutputWriter output, double value) => output.WriteDouble(value),
+#endif
+                CodedOutputStream.DoubleSize,
+                tag,
+                defaultValue);
         }
 
         // Enums are tricky. We can probably use expression trees to build these delegates automatically,
@@ -388,9 +523,13 @@ namespace Google.Protobuf
         /// <returns>A codec for the given tag.</returns>
         public static FieldCodec<T> ForEnum<T>(uint tag, Func<T, int> toInt32, Func<int, T> fromInt32, T defaultValue)
         {
-            return new FieldCodec<T>(input => fromInt32(
-                input.ReadEnum()),
+            return new FieldCodec<T>(
+                input => fromInt32(input.ReadEnum()),
                 (output, value) => output.WriteEnum(toInt32(value)),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) => fromInt32(input.ReadEnum()),
+                (ref CodedOutputWriter output, T value) => output.WriteEnum(toInt32(value)),
+#endif
                 value => CodedOutputStream.ComputeEnumSize(toInt32(value)), tag, defaultValue);
         }
 
@@ -403,13 +542,20 @@ namespace Google.Protobuf
         public static FieldCodec<T> ForMessage<T>(uint tag, MessageParser<T> parser) where T : class, IMessage<T>
         {
             return new FieldCodec<T>(
-                input => 
-                { 
-                    T message = parser.CreateTemplate(); 
-                    input.ReadMessage(message); 
-                    return message; 
+                input =>
+                {
+                    T message = parser.CreateTemplate();
+                    input.ReadMessage(message);
+                    return message;
                 },
                 (output, value) => output.WriteMessage(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) =>
+                {
+                    throw new NotSupportedException();
+                },
+                (ref CodedOutputWriter output, T value) => throw new NotSupportedException(),
+#endif
                 (CodedInputStream i, ref T v) => 
                 {
                     if (v == null)
@@ -454,7 +600,14 @@ namespace Google.Protobuf
                     input.ReadGroup(message);
                     return message;
                 },
-                (output, value) => output.WriteGroup(value), 
+                (output, value) => output.WriteGroup(value),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) =>
+                {
+                    throw new NotSupportedException();
+                },
+                (ref CodedOutputWriter output, T value) => throw new NotSupportedException(),
+#endif
                 (CodedInputStream i, ref T v) => 
                 {
                     if (v == null)
@@ -492,6 +645,13 @@ namespace Google.Protobuf
             return new FieldCodec<T>(
                 input => WrapperCodecs.Read<T>(input, nestedCodec),
                 (output, value) => WrapperCodecs.Write<T>(output, value, nestedCodec),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) =>
+                {
+                    throw new NotSupportedException();
+                },
+                (ref CodedOutputWriter output, T value) => throw new NotSupportedException(),
+#endif
                 (CodedInputStream i, ref T v) => v = WrapperCodecs.Read<T>(i, nestedCodec),
                 (ref T v, T v2) => { v = v2; return v == null; },
                 value => WrapperCodecs.CalculateSize<T>(value, nestedCodec),
@@ -509,6 +669,13 @@ namespace Google.Protobuf
             return new FieldCodec<T?>(
                 WrapperCodecs.GetReader<T>(),
                 (output, value) => WrapperCodecs.Write<T>(output, value.Value, nestedCodec),
+#if NETSTANDARD2_0
+                (ref CodedInputReader input) =>
+                {
+                    throw new NotSupportedException();
+                },
+                (ref CodedOutputWriter output, T? value) => throw new NotSupportedException(),
+#endif
                 (CodedInputStream i, ref T? v) => v = WrapperCodecs.Read<T>(i, nestedCodec),
                 (ref T? v, T? v2) => { if (v2.HasValue) { v = v2; } return v.HasValue; },
                 value => value == null ? 0 : WrapperCodecs.CalculateSize<T>(value.Value, nestedCodec),
@@ -628,6 +795,11 @@ namespace Google.Protobuf
         }
     }
 
+#if NETSTANDARD2_0
+    internal delegate void WriterAction<in TValue>(ref CodedOutputWriter writer, TValue value);
+    internal delegate TValue ReaderFunc<out TValue>(ref CodedInputReader reader);
+#endif
+
     /// <summary>
     /// <para>
     /// An encode/decode pair for a single field. This effectively encapsulates
@@ -683,6 +855,13 @@ namespace Google.Protobuf
         /// </summary>
         internal Action<CodedOutputStream, T> ValueWriter { get; }
 
+#if NETSTANDARD2_0
+        /// <summary>
+        /// Returns a delegate to write a value (unconditionally) to a coded output writer.
+        /// </summary>
+        internal WriterAction<T> ValueSpanWriter { get; }
+#endif
+
         /// <summary>
         /// Returns the size calculator for just a value.
         /// </summary>
@@ -693,6 +872,14 @@ namespace Google.Protobuf
         /// the stream is already positioned on the appropriate tag.
         /// </summary>
         internal Func<CodedInputStream, T> ValueReader { get; }
+
+#if NETSTANDARD2_0
+        /// <summary>
+        /// Returns a delegate to read a value from a coded input reader. It is assumed that
+        /// the reader is already positioned on the appropriate tag.
+        /// </summary>
+        internal ReaderFunc<T> ValueSpanReader { get; }
+#endif
 
         /// <summary>
         /// Returns a delegate to merge a value from a coded input stream.
@@ -741,9 +928,22 @@ namespace Google.Protobuf
         internal FieldCodec(
                 Func<CodedInputStream, T> reader,
                 Action<CodedOutputStream, T> writer,
+#if NETSTANDARD2_0
+                ReaderFunc<T> spanReader,
+                WriterAction<T> spanWriter,
+#endif
                 int fixedSize,
                 uint tag,
-                T defaultValue) : this(reader, writer, _ => fixedSize, tag, defaultValue)
+                T defaultValue) : this(
+                    reader,
+                    writer,
+#if NETSTANDARD2_0
+                    spanReader,
+                    spanWriter,
+#endif
+                    _ => fixedSize,
+                    tag,
+                    defaultValue)
         {
             FixedSize = fixedSize;
         }
@@ -751,26 +951,62 @@ namespace Google.Protobuf
         internal FieldCodec(
             Func<CodedInputStream, T> reader,
             Action<CodedOutputStream, T> writer,
+#if NETSTANDARD2_0
+            ReaderFunc<T> spanReader,
+            WriterAction<T> spanWriter,
+#endif
             Func<T, int> sizeCalculator,
             uint tag,
-            T defaultValue) : this(reader, writer, (CodedInputStream i, ref T v) => v = reader(i), (ref T v, T v2) => { v = v2; return true; }, sizeCalculator, tag, 0, defaultValue)
+            T defaultValue) : this(
+                reader,
+                writer,
+#if NETSTANDARD2_0
+                spanReader,
+                spanWriter,
+#endif
+                (CodedInputStream i, ref T v) => v = reader(i),
+                (ref T v, T v2) => { v = v2; return true; },
+                sizeCalculator,
+                tag,
+                0,
+                defaultValue)
         {
         }
 
         internal FieldCodec(
             Func<CodedInputStream, T> reader,
             Action<CodedOutputStream, T> writer,
+#if NETSTANDARD2_0
+            ReaderFunc<T> spanReader,
+            WriterAction<T> spanWriter,
+#endif
             InputMerger inputMerger,
             ValuesMerger valuesMerger,
             Func<T, int> sizeCalculator,
             uint tag,
-            uint endTag = 0) : this(reader, writer, inputMerger, valuesMerger, sizeCalculator, tag, endTag, DefaultDefault)
+            uint endTag = 0) : this(
+                reader,
+                writer,
+#if NETSTANDARD2_0
+                spanReader,
+                spanWriter,
+#endif
+                inputMerger,
+                valuesMerger,
+                sizeCalculator,
+                tag,
+                endTag,
+                DefaultDefault)
         {
         }
 
         internal FieldCodec(
             Func<CodedInputStream, T> reader,
             Action<CodedOutputStream, T> writer,
+#if NETSTANDARD2_0
+            ReaderFunc<T> spanReader,
+            WriterAction<T> spanWriter,
+#endif
             InputMerger inputMerger,
             ValuesMerger valuesMerger,
             Func<T, int> sizeCalculator,
@@ -780,6 +1016,10 @@ namespace Google.Protobuf
         {
             ValueReader = reader;
             ValueWriter = writer;
+#if NETSTANDARD2_0
+            ValueSpanReader = spanReader;
+            ValueSpanWriter = spanWriter;
+#endif
             ValueMerger = inputMerger;
             FieldMerger = valuesMerger;
             ValueSizeCalculator = sizeCalculator;
