@@ -1,7 +1,7 @@
 ﻿#region Copyright notice and license
 // Protocol Buffers - Google's data interchange format
-// Copyright 2019 Google Inc.  All rights reserved.
-// https://github.com/protocolbuffers/protobuf
+// Copyright 2008 Google Inc.  All rights reserved.
+// https://developers.google.com/protocol-buffers/
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -30,28 +30,40 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endregion
 
-using BenchmarkDotNet.Running;
+using System;
+using Google.Protobuf.Reflection;
 
-namespace Google.Protobuf.Benchmarks
+namespace Google.Protobuf
 {
-    /// <summary>
-    /// Entry point, that currently runs the sole benchmark we have.
-    /// Eventually we might want to be able to specify a particular dataset
-    /// from the command line.
-    /// </summary>
-    class Program
+#if NETSTANDARD2_0
+    public interface ISpanMessage
     {
-#if true
-        static void Main() => BenchmarkRunner.Run<JamesBenchmarks>();
-#else
-        static void Main()
-        {
-            var b = new JamesBenchmarks();
-            b.GlobalSetup();
+        void MergeFrom(ref CodedInputReader input);
+        void WriteTo(ref CodedOutputWriter output);
+        int CalculateSize();
 
-            b.ParseFromReadOnlySequence();
-            //b.ParseFromByteArray();
-        }
-#endif
+        /// <summary>
+        /// Descriptor for this message. All instances are expected to return the same descriptor,
+        /// and for generated types this will be an explicitly-implemented member, returning the
+        /// same value as the static property declared on the type.
+        /// </summary>
+        MessageDescriptor Descriptor { get; }
     }
+
+    /// <summary>
+    /// Generic interface for a Protocol Buffers message,
+    /// where the type parameter is expected to be the same type as
+    /// the implementation class.
+    /// </summary>
+    /// <typeparam name="T">The message type.</typeparam>
+    public interface ISpanMessage<T> : ISpanMessage, IEquatable<T>, IDeepCloneable<T> where T : ISpanMessage<T>
+    {
+        /// <summary>
+        /// Merges the given message into this one.
+        /// </summary>
+        /// <remarks>See the user guide for precise merge semantics.</remarks>
+        /// <param name="message">The message to merge with this one. Must not be null.</param>
+        void MergeFrom(T message);
+    }
+#endif
 }
