@@ -221,7 +221,7 @@ namespace Google.Protobuf
             return new FieldCodec<string>(
                 input => input.ReadString(),
                 (output, value) => output.WriteString(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => input.ReadString(),
                 (ref CodedOutputWriter output, string value) => output.WriteString(value),
 #endif
@@ -241,7 +241,7 @@ namespace Google.Protobuf
             return new FieldCodec<ByteString>(
                 input => input.ReadBytes(),
                 (output, value) => output.WriteBytes(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => input.ReadBytes(),
                 (ref CodedOutputWriter output, ByteString value) => output.WriteBytes(value),
 #endif
@@ -261,7 +261,7 @@ namespace Google.Protobuf
             return new FieldCodec<bool>(
                 input => input.ReadBool(),
                 (output, value) => output.WriteBool(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => input.ReadBool(),
                 (ref CodedOutputWriter output, bool value) => output.WriteBool(value),
 #endif
@@ -281,7 +281,7 @@ namespace Google.Protobuf
             return new FieldCodec<int>(
                 input => input.ReadInt32(),
                 (output, value) => output.WriteInt32(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => input.ReadInt32(),
                 (ref CodedOutputWriter output, int value) => output.WriteInt32(value),
 #endif
@@ -301,7 +301,7 @@ namespace Google.Protobuf
             return new FieldCodec<int>(
                 input => input.ReadSInt32(),
                 (output, value) => output.WriteSInt32(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => input.ReadSInt32(),
                 (ref CodedOutputWriter output, int value) => output.WriteSInt32(value),
 #endif
@@ -321,7 +321,7 @@ namespace Google.Protobuf
             return new FieldCodec<uint>(
                 input => input.ReadFixed32(),
                 (output, value) => output.WriteFixed32(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => input.ReadFixed32(),
                 (ref CodedOutputWriter output, uint value) => output.WriteFixed32(value),
 #endif
@@ -341,7 +341,7 @@ namespace Google.Protobuf
             return new FieldCodec<int>(
                 input => input.ReadSFixed32(),
                 (output, value) => output.WriteSFixed32(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => input.ReadSFixed32(),
                 (ref CodedOutputWriter output, int value) => output.WriteSFixed32(value),
 #endif
@@ -361,7 +361,7 @@ namespace Google.Protobuf
             return new FieldCodec<uint>(
                 input => input.ReadUInt32(),
                 (output, value) => output.WriteUInt32(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => input.ReadUInt32(),
                 (ref CodedOutputWriter output, uint value) => output.WriteUInt32(value),
 #endif
@@ -381,7 +381,7 @@ namespace Google.Protobuf
             return new FieldCodec<long>(
                 input => input.ReadInt64(),
                 (output, value) => output.WriteInt64(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => input.ReadInt64(),
                 (ref CodedOutputWriter output, long value) => output.WriteInt64(value),
 #endif
@@ -401,7 +401,7 @@ namespace Google.Protobuf
             return new FieldCodec<long>(
                 input => input.ReadSInt64(),
                 (output, value) => output.WriteSInt64(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => input.ReadSInt64(),
                 (ref CodedOutputWriter output, long value) => output.WriteSInt64(value),
 #endif
@@ -421,7 +421,7 @@ namespace Google.Protobuf
             return new FieldCodec<ulong>(
                 input => input.ReadFixed64(),
                 (output, value) => output.WriteFixed64(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => input.ReadFixed64(),
                 (ref CodedOutputWriter output, ulong value) => output.WriteFixed64(value),
 #endif
@@ -441,7 +441,7 @@ namespace Google.Protobuf
             return new FieldCodec<long>(
                 input => input.ReadSFixed64(),
                 (output, value) => output.WriteSFixed64(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => input.ReadSFixed64(),
                 (ref CodedOutputWriter output, long value) => output.WriteSFixed64(value),
 #endif
@@ -461,7 +461,7 @@ namespace Google.Protobuf
             return new FieldCodec<ulong>(
                 input => input.ReadUInt64(),
                 (output, value) => output.WriteUInt64(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => input.ReadUInt64(),
                 (ref CodedOutputWriter output, ulong value) => output.WriteUInt64(value),
 #endif
@@ -481,7 +481,7 @@ namespace Google.Protobuf
             return new FieldCodec<float>(
                 input => input.ReadFloat(),
                 (output, value) => output.WriteFloat(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => input.ReadFloat(),
                 (ref CodedOutputWriter output, float value) => output.WriteFloat(value),
 #endif
@@ -501,7 +501,7 @@ namespace Google.Protobuf
             return new FieldCodec<double>(
                 input => input.ReadDouble(),
                 (output, value) => output.WriteDouble(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => input.ReadDouble(),
                 (ref CodedOutputWriter output, double value) => output.WriteDouble(value),
 #endif
@@ -526,7 +526,7 @@ namespace Google.Protobuf
             return new FieldCodec<T>(
                 input => fromInt32(input.ReadEnum()),
                 (output, value) => output.WriteEnum(toInt32(value)),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => fromInt32(input.ReadEnum()),
                 (ref CodedOutputWriter output, T value) => output.WriteEnum(toInt32(value)),
 #endif
@@ -549,7 +549,7 @@ namespace Google.Protobuf
                     return message;
                 },
                 (output, value) => output.WriteMessage(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) =>
                 {
                     throw new NotSupportedException();
@@ -601,7 +601,7 @@ namespace Google.Protobuf
                     return message;
                 },
                 (output, value) => output.WriteGroup(value),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) =>
                 {
                     throw new NotSupportedException();
@@ -645,7 +645,7 @@ namespace Google.Protobuf
             return new FieldCodec<T>(
                 input => WrapperCodecs.Read<T>(input, nestedCodec),
                 (output, value) => WrapperCodecs.Write<T>(output, value, nestedCodec),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => WrapperCodecs.Read<T>(ref input, nestedCodec),
                 (ref CodedOutputWriter output, T value) => WrapperCodecs.Write<T>(ref output, value, nestedCodec),
 #endif
@@ -666,7 +666,7 @@ namespace Google.Protobuf
             return new FieldCodec<T?>(
                 WrapperCodecs.GetReader<T>(),
                 (output, value) => WrapperCodecs.Write<T>(output, value.Value, nestedCodec),
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => WrapperCodecs.Read<T>(ref input, nestedCodec),
                 (ref CodedOutputWriter output, T? value) => WrapperCodecs.Write<T>(ref output, value.Value, nestedCodec),
 #endif
@@ -781,7 +781,7 @@ namespace Google.Protobuf
                 codec.WriteTagAndValue(output, value);
             }
 
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
             internal static T Read<T>(ref CodedInputReader input, FieldCodec<T> codec)
             {
                 int length = input.ReadLength();
@@ -854,7 +854,7 @@ namespace Google.Protobuf
         /// </summary>
         internal delegate bool ValuesMerger(ref T value, T other);
 
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
         internal delegate void WriterAction<in TValue>(ref CodedOutputWriter writer, TValue value);
         internal delegate TValue ReaderFunc<out TValue>(ref CodedInputReader reader);
 #endif
@@ -882,7 +882,7 @@ namespace Google.Protobuf
         /// </summary>
         internal Action<CodedOutputStream, T> ValueWriter { get; }
 
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
         /// <summary>
         /// Returns a delegate to write a value (unconditionally) to a coded output writer.
         /// </summary>
@@ -900,7 +900,7 @@ namespace Google.Protobuf
         /// </summary>
         internal Func<CodedInputStream, T> ValueReader { get; }
 
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
         /// <summary>
         /// Returns a delegate to read a value from a coded input reader. It is assumed that
         /// the reader is already positioned on the appropriate tag.
@@ -955,7 +955,7 @@ namespace Google.Protobuf
         internal FieldCodec(
                 Func<CodedInputStream, T> reader,
                 Action<CodedOutputStream, T> writer,
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 ReaderFunc<T> spanReader,
                 WriterAction<T> spanWriter,
 #endif
@@ -964,7 +964,7 @@ namespace Google.Protobuf
                 T defaultValue) : this(
                     reader,
                     writer,
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                     spanReader,
                     spanWriter,
 #endif
@@ -978,7 +978,7 @@ namespace Google.Protobuf
         internal FieldCodec(
             Func<CodedInputStream, T> reader,
             Action<CodedOutputStream, T> writer,
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
             ReaderFunc<T> spanReader,
             WriterAction<T> spanWriter,
 #endif
@@ -987,7 +987,7 @@ namespace Google.Protobuf
             T defaultValue) : this(
                 reader,
                 writer,
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 spanReader,
                 spanWriter,
 #endif
@@ -1003,7 +1003,7 @@ namespace Google.Protobuf
         internal FieldCodec(
             Func<CodedInputStream, T> reader,
             Action<CodedOutputStream, T> writer,
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
             ReaderFunc<T> spanReader,
             WriterAction<T> spanWriter,
 #endif
@@ -1014,7 +1014,7 @@ namespace Google.Protobuf
             uint endTag = 0) : this(
                 reader,
                 writer,
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 spanReader,
                 spanWriter,
 #endif
@@ -1030,7 +1030,7 @@ namespace Google.Protobuf
         internal FieldCodec(
             Func<CodedInputStream, T> reader,
             Action<CodedOutputStream, T> writer,
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
             ReaderFunc<T> spanReader,
             WriterAction<T> spanWriter,
 #endif
@@ -1043,7 +1043,7 @@ namespace Google.Protobuf
         {
             ValueReader = reader;
             ValueWriter = writer;
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
             ValueSpanReader = spanReader;
             ValueSpanWriter = spanWriter;
 #endif
@@ -1077,7 +1077,7 @@ namespace Google.Protobuf
             }
         }
 
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
         /// <summary>
         /// Write a tag and the given value, *if* the value is not the default.
         /// </summary>
@@ -1102,7 +1102,7 @@ namespace Google.Protobuf
         /// <returns>The value read from the stream.</returns>
         public T Read(CodedInputStream input) => ValueReader(input);
 
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
         /// <summary>
         /// Reads a value of the codec type from the given <see cref="CodedInputReader"/>.
         /// </summary>

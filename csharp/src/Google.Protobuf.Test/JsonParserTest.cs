@@ -549,9 +549,12 @@ namespace Google.Protobuf
         }
 
         [Test]
+#if !NETCOREAPP3_0
+        // .NET Core 3.0 returns infinity
         [TestCase("1.7977e308")]
         [TestCase("-1.7977e308")]
         [TestCase("1e309")]
+#endif
         [TestCase("1,0")]
         [TestCase("1.0.0")]
         [TestCase("+1")]

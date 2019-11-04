@@ -7,7 +7,7 @@
     <VersionPrefix>3.11.0-rc0</VersionPrefix>
     <LangVersion>7.3</LangVersion>
     <Authors>Google Inc.</Authors>
-    <TargetFrameworks>netstandard1.0;netstandard2.0;net45</TargetFrameworks>
+    <TargetFrameworks>netstandard1.0;netstandard2.0;netstandard2.1;net45</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyOriginatorKeyFile>../../keys/Google.Protobuf.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
@@ -27,12 +27,16 @@
     <DefineConstants>$(DefineConstants);GOOGLE_PROTOBUF_SUPPORT_SYSTEM_MEMORY</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.1' ">
+    <DefineConstants>$(DefineConstants);GOOGLE_PROTOBUF_SUPPORT_SYSTEM_MEMORY;GOOGLE_PROTOBUF_SUPPORT_SPAN</DefineConstants>
+  </PropertyGroup>
+
   <!-- Needed for the net45 build to work on Unix. See https://github.com/dotnet/designs/pull/33 -->
   <ItemGroup>
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="All" Version="1.0.0-preview.2"/>
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' or '$(TargetFramework)' == 'netstandard2.0' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' or '$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'netstandard2.1' ">
     <PackageReference Include="System.Memory" Version="4.5.2"/>
   </ItemGroup>
 

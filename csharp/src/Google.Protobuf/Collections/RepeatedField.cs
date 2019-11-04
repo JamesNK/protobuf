@@ -124,7 +124,7 @@ namespace Google.Protobuf.Collections
             }
         }
 
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
         /// <summary>
         /// Adds the entries from the given input stream, decoding them with the specified codec.
         /// </summary>
@@ -258,7 +258,7 @@ namespace Google.Protobuf.Collections
             }
         }
 
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
         /// <summary>
         /// Writes the contents of this collection to the given <see cref="CodedOutputStream"/>,
         /// encoding each value using the specified codec.
