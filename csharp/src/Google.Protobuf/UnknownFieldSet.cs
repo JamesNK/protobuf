@@ -77,7 +77,7 @@ namespace Google.Protobuf
             }
         }
 
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
         /// <summary>
         /// Serializes the set and writes it to <paramref name="output"/>.
         /// </summary>
@@ -246,7 +246,7 @@ namespace Google.Protobuf
             }
         }
 
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
         /// <summary>
         /// Parse a single field from <paramref name="input"/> and merge it
         /// into this set.
@@ -332,7 +332,7 @@ namespace Google.Protobuf
             return unknownFields;
         }
 
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
         /// <summary>
         /// Create a new UnknownFieldSet if unknownFields is null.
         /// Parse a single field from <paramref name="input"/> and merge it

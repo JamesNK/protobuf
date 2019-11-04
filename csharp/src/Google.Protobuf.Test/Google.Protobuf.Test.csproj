@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net451;netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks>net451;netcoreapp2.1;netcoreapp3.0</TargetFrameworks>
     <AssemblyOriginatorKeyFile>../../keys/Google.Protobuf.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
@@ -18,6 +18,10 @@
     <PackageReference Include="NUnit" Version="3.9.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.9.0" />
   </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.0' ">
+    <DefineConstants>$(DefineConstants);GOOGLE_PROTOBUF_SUPPORT_SYSTEM_MEMORY;GOOGLE_PROTOBUF_SUPPORT_SPAN</DefineConstants>
+  </PropertyGroup>
 
   <!-- Needed for the net45 build to work on Unix. See https://github.com/dotnet/designs/pull/33 -->
   <ItemGroup>

@@ -35,7 +35,7 @@ using Google.Protobuf.Reflection;
 
 namespace Google.Protobuf
 {
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
     public interface ISpanMessage
     {
         void MergeFrom(ref CodedInputReader input);

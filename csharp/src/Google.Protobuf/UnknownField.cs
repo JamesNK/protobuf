@@ -147,7 +147,7 @@ namespace Google.Protobuf
             }
         }
 
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
         /// <summary>
         /// Serializes the field, including the field number, and writes it to
         /// <paramref name="output"/>

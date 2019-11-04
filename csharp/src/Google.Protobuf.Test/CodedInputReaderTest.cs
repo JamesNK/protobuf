@@ -30,7 +30,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endregion
 
-#if NETCOREAPP2_1
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
 using System;
 using System.Buffers;
 using System.IO;

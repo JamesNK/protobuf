@@ -30,7 +30,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endregion
 
-#if NETCOREAPP2_1
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
 using System;
 using System.Buffers;
 using System.IO;
@@ -51,21 +51,21 @@ namespace Google.Protobuf
             // Only do 32-bit write if the value fits in 32 bits.
             if ((value >> 32) == 0)
             {
-                ArrayBufferWriter rawOutput = new ArrayBufferWriter(1024);
+                ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>(1024);
                 CodedOutputWriter output = new CodedOutputWriter(rawOutput);
                 output.WriteRawVarint32((uint) value);
                 output.Flush();
-                Assert.AreEqual(data, rawOutput.Formatted.ToArray());
+                Assert.AreEqual(data, rawOutput.WrittenSpan.ToArray());
                 // Also try computing size.
                 Assert.AreEqual(data.Length, CodedOutputStream.ComputeRawVarint32Size((uint) value));
             }
 
             {
-                ArrayBufferWriter rawOutput = new ArrayBufferWriter(1024);
+                ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>(1024);
                 CodedOutputWriter output = new CodedOutputWriter(rawOutput);
                 output.WriteRawVarint64(value);
                 output.Flush();
-                Assert.AreEqual(data, rawOutput.Formatted.ToArray());
+                Assert.AreEqual(data, rawOutput.WrittenSpan.ToArray());
 
                 // Also try computing size.
                 Assert.AreEqual(data.Length, CodedOutputStream.ComputeRawVarint64Size(value));
@@ -113,11 +113,11 @@ namespace Google.Protobuf
         /// </summary>
         private static void AssertWriteLittleEndian32(byte[] data, uint value)
         {
-            ArrayBufferWriter rawOutput = new ArrayBufferWriter(1024);
+            ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>(1024);
             CodedOutputWriter output = new CodedOutputWriter(rawOutput);
             output.WriteRawLittleEndian32(value);
             output.Flush();
-            Assert.AreEqual(data, rawOutput.Formatted.ToArray());
+            Assert.AreEqual(data, rawOutput.WrittenSpan.ToArray());
         }
 
         /// <summary>
@@ -126,11 +126,11 @@ namespace Google.Protobuf
         /// </summary>
         private static void AssertWriteLittleEndian64(byte[] data, ulong value)
         {
-            ArrayBufferWriter rawOutput = new ArrayBufferWriter(1024);
+            ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>(1024);
             CodedOutputWriter output = new CodedOutputWriter(rawOutput);
             output.WriteRawLittleEndian64(value);
             output.Flush();
-            Assert.AreEqual(data, rawOutput.Formatted.ToArray());
+            Assert.AreEqual(data, rawOutput.WrittenSpan.ToArray());
         }
 
         /// <summary>
@@ -217,13 +217,13 @@ namespace Google.Protobuf
             Assert.AreEqual(10, CodedOutputStream.ComputeInt32Size(-2));
             Assert.AreEqual(10, CodedOutputStream.ComputeEnumSize((int) SampleEnum.NegativeValue));
 
-            ArrayBufferWriter rawOutput = new ArrayBufferWriter(10);
+            ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>(10);
             CodedOutputWriter output = new CodedOutputWriter(rawOutput);
             output.WriteEnum((int) SampleEnum.NegativeValue);
             output.Flush();
 
-            Assert.AreEqual(10, rawOutput.Formatted.Count);
-            Assert.AreEqual("FE-FF-FF-FF-FF-FF-FF-FF-FF-01", BitConverter.ToString(rawOutput.Formatted.ToArray()));
+            Assert.AreEqual(10, rawOutput.WrittenCount);
+            Assert.AreEqual("FE-FF-FF-FF-FF-FF-FF-FF-FF-01", BitConverter.ToString(rawOutput.WrittenSpan.ToArray()));
         }
 
         [Test]
@@ -235,60 +235,60 @@ namespace Google.Protobuf
 
             byte[] child;
             {
-                ArrayBufferWriter rawOutput = new ArrayBufferWriter(1024);
+                ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>(1024);
                 CodedOutputWriter cout = new CodedOutputWriter(rawOutput);
                 // Field 11: numeric value: 500
                 cout.WriteTag(11, WireFormat.WireType.Varint);
                 cout.Flush();
-                Assert.AreEqual(1, rawOutput.CommitedByteCount);
+                Assert.AreEqual(1, rawOutput.WrittenCount);
                 cout.WriteInt32(500);
                 cout.Flush();
-                Assert.AreEqual(3, rawOutput.CommitedByteCount);
+                Assert.AreEqual(3, rawOutput.WrittenCount);
                 //Field 12: length delimited 120 bytes
                 cout.WriteTag(12, WireFormat.WireType.LengthDelimited);
                 cout.Flush();
-                Assert.AreEqual(4, rawOutput.CommitedByteCount);
+                Assert.AreEqual(4, rawOutput.WrittenCount);
                 cout.WriteBytes(ByteString.CopyFrom(content));
                 cout.Flush();
-                Assert.AreEqual(115, rawOutput.CommitedByteCount);
+                Assert.AreEqual(115, rawOutput.WrittenCount);
                 // Field 13: fixed numeric value: 501
                 cout.WriteTag(13, WireFormat.WireType.Fixed32);
                 cout.Flush();
-                Assert.AreEqual(116, rawOutput.CommitedByteCount);
+                Assert.AreEqual(116, rawOutput.WrittenCount);
                 cout.WriteSFixed32(501);
                 cout.Flush();
-                Assert.AreEqual(120, rawOutput.CommitedByteCount);
+                Assert.AreEqual(120, rawOutput.WrittenCount);
 
-                child = rawOutput.Formatted.ToArray();
+                child = rawOutput.WrittenSpan.ToArray();
             }
 
             byte[] bytes;
             {
-                ArrayBufferWriter rawOutput = new ArrayBufferWriter(1024);
+                ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>(1024);
                 CodedOutputWriter cout = new CodedOutputWriter(rawOutput);
                 // Field 1: numeric value: 500
                 cout.WriteTag(1, WireFormat.WireType.Varint);
                 cout.Flush();
-                Assert.AreEqual(1, rawOutput.CommitedByteCount);
+                Assert.AreEqual(1, rawOutput.WrittenCount);
                 cout.WriteInt32(500);
                 cout.Flush();
-                Assert.AreEqual(3, rawOutput.CommitedByteCount);
+                Assert.AreEqual(3, rawOutput.WrittenCount);
                 //Field 2: length delimited 120 bytes
                 cout.WriteTag(2, WireFormat.WireType.LengthDelimited);
                 cout.Flush();
-                Assert.AreEqual(4, rawOutput.CommitedByteCount);
+                Assert.AreEqual(4, rawOutput.WrittenCount);
                 cout.WriteBytes(ByteString.CopyFrom(child));
                 cout.Flush();
-                Assert.AreEqual(125, rawOutput.CommitedByteCount);
+                Assert.AreEqual(125, rawOutput.WrittenCount);
                 // Field 3: fixed numeric value: 500
                 cout.WriteTag(3, WireFormat.WireType.Fixed32);
                 cout.Flush();
-                Assert.AreEqual(126, rawOutput.CommitedByteCount);
+                Assert.AreEqual(126, rawOutput.WrittenCount);
                 cout.WriteSFixed32(501);
                 cout.Flush();
-                Assert.AreEqual(130, rawOutput.CommitedByteCount);
+                Assert.AreEqual(130, rawOutput.WrittenCount);
 
-                bytes = rawOutput.Formatted.ToArray();
+                bytes = rawOutput.WrittenSpan.ToArray();
             }
 
             // Now test Input stream:
@@ -354,17 +354,17 @@ namespace Google.Protobuf
             }
             string s1 = sb.ToString();
 
-            ArrayBufferWriter rawOutput = new ArrayBufferWriter(1024, 1024);
+            ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>();
             CodedOutputWriter output = new CodedOutputWriter(rawOutput);
             output.WriteString(s1);
             output.Flush();
 
-            var textData = rawOutput.Formatted.Slice(1).ToArray();
+            var textData = rawOutput.WrittenSpan.Slice(1).ToArray();
             string s2 = Encoding.UTF8.GetString(textData);
 
             Assert.AreEqual(s1, s2);
 
-            CodedInputReader input = new CodedInputReader(new ReadOnlySequence<byte>(rawOutput.Formatted.ToArray()));
+            CodedInputReader input = new CodedInputReader(new ReadOnlySequence<byte>(rawOutput.WrittenSpan.ToArray()));
             Assert.AreEqual(s1, input.ReadString());
         }
 
@@ -378,17 +378,17 @@ namespace Google.Protobuf
             }
             string s1 = sb.ToString();
 
-            ArrayBufferWriter rawOutput = new ArrayBufferWriter(1024, 1024);
+            ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>();
             CodedOutputWriter output = new CodedOutputWriter(rawOutput);
             output.WriteString(s1);
             output.Flush();
 
-            var textData = rawOutput.Formatted.Slice(1).ToArray();
+            var textData = rawOutput.WrittenSpan.Slice(1).ToArray();
             string s2 = Encoding.UTF8.GetString(textData);
 
             Assert.AreEqual(s1, s2);
 
-            CodedInputReader input = new CodedInputReader(new ReadOnlySequence<byte>(rawOutput.Formatted.ToArray()));
+            CodedInputReader input = new CodedInputReader(new ReadOnlySequence<byte>(rawOutput.WrittenSpan.ToArray()));
             Assert.AreEqual(s1, input.ReadString());
         }
 
@@ -402,17 +402,17 @@ namespace Google.Protobuf
             }
             string s1 = sb.ToString();
 
-            ArrayBufferWriter rawOutput = new ArrayBufferWriter(1024, 1024);
+            ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>();
             CodedOutputWriter output = new CodedOutputWriter(rawOutput);
             output.WriteString(s1);
             output.Flush();
 
-            var textData = rawOutput.Formatted.Slice(2).ToArray();
+            var textData = rawOutput.WrittenSpan.Slice(2).ToArray();
             string s2 = Encoding.UTF8.GetString(textData);
 
             Assert.AreEqual(s1, s2);
 
-            CodedInputReader input = new CodedInputReader(new ReadOnlySequence<byte>(rawOutput.Formatted.ToArray()));
+            CodedInputReader input = new CodedInputReader(new ReadOnlySequence<byte>(rawOutput.WrittenSpan.ToArray()));
             Assert.AreEqual(s1, input.ReadString());
         }
 
@@ -426,17 +426,17 @@ namespace Google.Protobuf
             }
             string s1 = sb.ToString();
 
-            ArrayBufferWriter rawOutput = new ArrayBufferWriter(1024, 1024);
+            ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>();
             CodedOutputWriter output = new CodedOutputWriter(rawOutput);
             output.WriteString(s1);
             output.Flush();
 
-            var textData = rawOutput.Formatted.Slice(2).ToArray();
+            var textData = rawOutput.WrittenSpan.Slice(2).ToArray();
             string s2 = Encoding.UTF8.GetString(textData);
 
             Assert.AreEqual(s1, s2);
 
-            CodedInputReader input = new CodedInputReader(new ReadOnlySequence<byte>(rawOutput.Formatted.ToArray()));
+            CodedInputReader input = new CodedInputReader(new ReadOnlySequence<byte>(rawOutput.WrittenSpan.ToArray()));
             Assert.AreEqual(s1, input.ReadString());
         }
     }

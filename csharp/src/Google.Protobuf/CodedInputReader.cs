@@ -30,7 +30,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endregion
 
-#if NETSTANDARD2_0
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
@@ -78,7 +78,7 @@ namespace Google.Protobuf
         /// </summary>
         internal bool DiscardUnknownFields { get; set; }
 
-        #region Reading of tags etc
+#region Reading of tags etc
 
         /// <summary>
         /// Peeks at the next field tag. This is like calling <see cref="ReadTag"/>, but the
@@ -272,11 +272,12 @@ namespace Google.Protobuf
         /// </summary>
         public unsafe float ReadFloat()
         {
-            byte* buffer = stackalloc byte[4];
-            Span<byte> tempSpan = new Span<byte>(buffer, 4);
+            // Cannot create a span directly since it gets passed to instance methods on a ref struct.
+            byte* buffer = stackalloc byte[sizeof(float)];
+            Span<byte> tempSpan = new Span<byte>(buffer, sizeof(float));
 
             ThrowEndOfStreamUnless(reader.TryCopyTo(tempSpan));
-            reader.Advance(4);
+            reader.Advance(sizeof(float));
 
             return Unsafe.ReadUnaligned<float>(ref MemoryMarshal.GetReference(tempSpan));
         }
@@ -528,9 +529,9 @@ namespace Google.Protobuf
             return PeekTag() == tag;
         }
 
-        #endregion
+#endregion
 
-        #region Underlying reading primitives
+#region Underlying reading primitives
         
         /// <summary>
         /// Reads a raw Varint from the stream.  If larger than 32 bits, discard the upper bits.
@@ -719,7 +720,7 @@ namespace Google.Protobuf
         {
             return (long)(n >> 1) ^ -(long)(n & 1);
         }
-        #endregion
+#endregion
 
         /// <summary>
         /// Sets currentLimit to (current position) + byteLimit. This is called
