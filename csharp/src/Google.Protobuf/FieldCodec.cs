@@ -646,11 +646,8 @@ namespace Google.Protobuf
                 input => WrapperCodecs.Read<T>(input, nestedCodec),
                 (output, value) => WrapperCodecs.Write<T>(output, value, nestedCodec),
 #if NETSTANDARD2_0
-                (ref CodedInputReader input) =>
-                {
-                    throw new NotSupportedException();
-                },
-                (ref CodedOutputWriter output, T value) => throw new NotSupportedException(),
+                (ref CodedInputReader input) => WrapperCodecs.Read<T>(ref input, nestedCodec),
+                (ref CodedOutputWriter output, T value) => WrapperCodecs.Write<T>(ref output, value, nestedCodec),
 #endif
                 (CodedInputStream i, ref T v) => v = WrapperCodecs.Read<T>(i, nestedCodec),
                 (ref T v, T v2) => { v = v2; return v == null; },
@@ -670,11 +667,8 @@ namespace Google.Protobuf
                 WrapperCodecs.GetReader<T>(),
                 (output, value) => WrapperCodecs.Write<T>(output, value.Value, nestedCodec),
 #if NETSTANDARD2_0
-                (ref CodedInputReader input) =>
-                {
-                    throw new NotSupportedException();
-                },
-                (ref CodedOutputWriter output, T? value) => throw new NotSupportedException(),
+                (ref CodedInputReader input) => WrapperCodecs.Read<T>(ref input, nestedCodec),
+                (ref CodedOutputWriter output, T? value) => WrapperCodecs.Write<T>(ref output, value.Value, nestedCodec),
 #endif
                 (CodedInputStream i, ref T? v) => v = WrapperCodecs.Read<T>(i, nestedCodec),
                 (ref T? v, T? v2) => { if (v2.HasValue) { v = v2; } return v.HasValue; },
@@ -787,6 +781,39 @@ namespace Google.Protobuf
                 codec.WriteTagAndValue(output, value);
             }
 
+#if NETSTANDARD2_0
+            internal static T Read<T>(ref CodedInputReader input, FieldCodec<T> codec)
+            {
+                int length = input.ReadLength();
+                long oldLimit = input.PushLimit(length);
+
+                uint tag;
+                T value = codec.DefaultValue;
+                while ((tag = input.ReadTag()) != 0)
+                {
+                    if (tag == codec.Tag)
+                    {
+                        value = codec.Read(ref input);
+                    }
+                    else
+                    {
+                        input.SkipLastField();
+                    }
+
+                }
+                input.CheckReadEndOfStreamTag();
+                input.PopLimit(oldLimit);
+
+                return value;
+            }
+
+            internal static void Write<T>(ref CodedOutputWriter output, T value, FieldCodec<T> codec)
+            {
+                output.WriteLength(codec.CalculateSizeWithTag(value));
+                codec.WriteTagAndValue(ref output, value);
+            }
+#endif
+
             internal  static int CalculateSize<T>(T value, FieldCodec<T> codec)
             {
                 int fieldLength = codec.CalculateSizeWithTag(value);
@@ -794,11 +821,6 @@ namespace Google.Protobuf
             }
         }
     }
-
-#if NETSTANDARD2_0
-    internal delegate void WriterAction<in TValue>(ref CodedOutputWriter writer, TValue value);
-    internal delegate TValue ReaderFunc<out TValue>(ref CodedInputReader reader);
-#endif
 
     /// <summary>
     /// <para>
@@ -831,6 +853,11 @@ namespace Google.Protobuf
         /// Merges a value into a reference to another value, returning a boolean if the value was set
         /// </summary>
         internal delegate bool ValuesMerger(ref T value, T other);
+
+#if NETSTANDARD2_0
+        internal delegate void WriterAction<in TValue>(ref CodedOutputWriter writer, TValue value);
+        internal delegate TValue ReaderFunc<out TValue>(ref CodedInputReader reader);
+#endif
 
         static FieldCodec()
         {
@@ -1050,12 +1077,39 @@ namespace Google.Protobuf
             }
         }
 
+#if NETSTANDARD2_0
+        /// <summary>
+        /// Write a tag and the given value, *if* the value is not the default.
+        /// </summary>
+        public void WriteTagAndValue(ref CodedOutputWriter output, T value)
+        {
+            if (!IsDefault(value))
+            {
+                output.WriteTag(Tag);
+                ValueSpanWriter(ref output, value);
+                if (EndTag != 0)
+                {
+                    output.WriteTag(EndTag);
+                }
+            }
+        }
+#endif
+
         /// <summary>
         /// Reads a value of the codec type from the given <see cref="CodedInputStream"/>.
         /// </summary>
         /// <param name="input">The input stream to read from.</param>
         /// <returns>The value read from the stream.</returns>
         public T Read(CodedInputStream input) => ValueReader(input);
+
+#if NETSTANDARD2_0
+        /// <summary>
+        /// Reads a value of the codec type from the given <see cref="CodedInputReader"/>.
+        /// </summary>
+        /// <param name="input">The input stream to read from.</param>
+        /// <returns>The value read from the stream.</returns>
+        public T Read(ref CodedInputReader input) => ValueSpanReader(ref input);
+#endif
 
         /// <summary>
         /// Calculates the size required to write the given value, with a tag,
