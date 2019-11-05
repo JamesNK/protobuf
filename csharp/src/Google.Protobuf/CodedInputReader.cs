@@ -51,6 +51,7 @@ namespace Google.Protobuf
         private uint lastTag;
         private int recursionDepth;
         private long currentLimit;
+        private Decoder decoder;
 
         public CodedInputReader(ReadOnlySequence<byte> input)
         {
@@ -58,6 +59,7 @@ namespace Google.Protobuf
             lastTag = 0;
             recursionDepth = 0;
             currentLimit = long.MaxValue;
+            decoder = null;
             DiscardUnknownFields = false;
         }
 
@@ -270,16 +272,14 @@ namespace Google.Protobuf
         /// <summary>
         /// Reads a float field from the stream.
         /// </summary>
-        public unsafe float ReadFloat()
+        public float ReadFloat()
         {
-            // Cannot create a span directly since it gets passed to instance methods on a ref struct.
-            byte* buffer = stackalloc byte[sizeof(float)];
-            Span<byte> tempSpan = new Span<byte>(buffer, sizeof(float));
+            Span<byte> data = stackalloc byte[sizeof(float)];
 
-            ThrowEndOfStreamUnless(reader.TryCopyTo(tempSpan));
+            ThrowEndOfStreamUnless(reader.TryCopyTo(data));
             reader.Advance(sizeof(float));
 
-            return Unsafe.ReadUnaligned<float>(ref MemoryMarshal.GetReference(tempSpan));
+            return Unsafe.ReadUnaligned<float>(ref MemoryMarshal.GetReference(data));
         }
 
         /// <summary>
@@ -333,7 +333,7 @@ namespace Google.Protobuf
         /// <summary>
         /// Reads a string field from the stream.
         /// </summary>
-        public unsafe string ReadString()
+        public string ReadString()
         {
             int length = ReadLength();
 
@@ -353,11 +353,7 @@ namespace Google.Protobuf
                 // Fast path: all bytes to decode appear in the same span.
                 ReadOnlySpan<byte> data = unreadSpan.Slice(0, length);
 
-                string value;
-                fixed (byte* sourceBytes = &MemoryMarshal.GetReference(data))
-                {
-                    value = CodedOutputStream.Utf8Encoding.GetString(sourceBytes, length);
-                }
+                string value = CodedOutputStream.Utf8Encoding.GetString(data);
 
                 reader.Advance(length);
                 return value;
@@ -377,32 +373,38 @@ namespace Google.Protobuf
         {
             ThrowEndOfStreamUnless(reader.Remaining >= byteLength);
 
+            if (decoder == null)
+            {
+                decoder = CodedOutputStream.Utf8Encoding.GetDecoder();
+            }
+
             // We need to decode bytes incrementally across multiple spans.
             int maxCharLength = CodedOutputStream.Utf8Encoding.GetMaxCharCount(byteLength);
             char[] charArray = ArrayPool<char>.Shared.Rent(maxCharLength);
-            var decoder = CodedOutputStream.Utf8Encoding.GetDecoder();
 
-            int remainingByteLength = byteLength;
-            int initializedChars = 0;
-            while (remainingByteLength > 0)
+            try
             {
-                int bytesRead = Math.Min(remainingByteLength, this.reader.UnreadSpan.Length);
-                remainingByteLength -= bytesRead;
-                bool flush = remainingByteLength == 0;
-
-                unsafe
+                int remainingByteLength = byteLength;
+                int initializedChars = 0;
+                while (remainingByteLength > 0)
                 {
-                    fixed (byte* pUnreadSpan = reader.UnreadSpan)
-                    fixed (char* pCharArray = &charArray[initializedChars])
-                    {
-                        initializedChars += decoder.GetChars(pUnreadSpan, bytesRead, pCharArray, charArray.Length - initializedChars, flush);
-                    }
-                }
-            }
+                    int bytesRead = Math.Min(remainingByteLength, this.reader.UnreadSpan.Length);
+                    ReadOnlySpan<byte> data = reader.UnreadSpan.Slice(0, bytesRead);
+                    remainingByteLength -= bytesRead;
+                    bool flush = remainingByteLength == 0;
 
-            string value = new string(charArray, 0, initializedChars);
-            ArrayPool<char>.Shared.Return(charArray);
-            return value;
+                    initializedChars += decoder.GetChars(data, charArray.AsSpan(initializedChars), flush);
+
+                    reader.Advance(bytesRead);
+                }
+
+                string value = new string(charArray, 0, initializedChars);
+                return value;
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(charArray);
+            }
         }
 
         /// <summary>
@@ -668,29 +670,27 @@ namespace Google.Protobuf
         /// <summary>
         /// Reads a 32-bit little-endian integer from the stream.
         /// </summary>
-        internal unsafe uint ReadRawLittleEndian32()
+        internal uint ReadRawLittleEndian32()
         {
-            byte* buffer = stackalloc byte[4];
-            Span<byte> tempSpan = new Span<byte>(buffer, 4);
+            Span<byte> data = stackalloc byte[4];
 
-            ThrowEndOfStreamUnless(reader.TryCopyTo(tempSpan));
+            ThrowEndOfStreamUnless(reader.TryCopyTo(data));
             reader.Advance(4);
 
-            return BinaryPrimitives.ReadUInt32LittleEndian(tempSpan);
+            return BinaryPrimitives.ReadUInt32LittleEndian(data);
         }
 
         /// <summary>
         /// Reads a 64-bit little-endian integer from the stream.
         /// </summary>
-        internal unsafe ulong ReadRawLittleEndian64()
+        internal ulong ReadRawLittleEndian64()
         {
-            byte* buffer = stackalloc byte[8];
-            Span<byte> tempSpan = new Span<byte>(buffer, 8);
+            Span<byte> data = stackalloc byte[8];
 
-            ThrowEndOfStreamUnless(reader.TryCopyTo(tempSpan));
+            ThrowEndOfStreamUnless(reader.TryCopyTo(data));
             reader.Advance(8);
 
-            return BinaryPrimitives.ReadUInt64LittleEndian(tempSpan);
+            return BinaryPrimitives.ReadUInt64LittleEndian(data);
         }
 
         /// <summary>

@@ -88,11 +88,9 @@ namespace Google.Protobuf
         /// Writes a float field value, without a tag, to the stream.
         /// </summary>
         /// <param name="value">The value to write</param>
-        public unsafe void WriteFloat(float value)
+        public void WriteFloat(float value)
         {
-            // Cannot create a span directly since it gets passed to instance methods on a ref struct.
-            byte* ptr = stackalloc byte[sizeof(float)];
-            Span<byte> floatSpan = new Span<byte>(ptr, sizeof(float));
+            var floatSpan = writer.GetSpan(sizeof(float));
 
             Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(floatSpan), value);
 
@@ -194,18 +192,7 @@ namespace Google.Protobuf
                 else
                 {
                     ReadOnlySpan<char> source = value.AsSpan();
-
-                    int bytesUsed;
-
-                    unsafe
-                    {
-                        fixed (char* sourceChars = &MemoryMarshal.GetReference(source))
-                        fixed (byte* destinationBytes = &MemoryMarshal.GetReference(buffer))
-                        {
-                            bytesUsed = Utf8Encoding.GetBytes(sourceChars, source.Length, destinationBytes, buffer.Length);
-                        }
-                    }
-
+                    int bytesUsed = Utf8Encoding.GetBytes(source, buffer);
                     writer.Advance(bytesUsed);
                 }
             }
@@ -224,15 +211,7 @@ namespace Google.Protobuf
                 {
                     int bytesUsed;
                     int charsUsed;
-
-                    unsafe
-                    {
-                        fixed (char* sourceChars = &MemoryMarshal.GetReference(source))
-                        fixed (byte* destinationBytes = &MemoryMarshal.GetReference(buffer))
-                        {
-                            encoder.Convert(sourceChars, source.Length, destinationBytes, buffer.Length, false, out charsUsed, out bytesUsed, out _);
-                        }
-                    }
+                    encoder.Convert(source, buffer, false, out charsUsed, out bytesUsed, out _);
 
                     source = source.Slice(charsUsed);
                     written += bytesUsed;

@@ -35,6 +35,7 @@ using System;
 using System.Buffers;
 using System.IO;
 using System.Text;
+using Google.Protobuf.Buffers;
 using Google.Protobuf.TestProtos;
 using NUnit.Framework;
 
@@ -354,7 +355,7 @@ namespace Google.Protobuf
             }
             string s1 = sb.ToString();
 
-            ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>();
+            ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>(1024);
             CodedOutputWriter output = new CodedOutputWriter(rawOutput);
             output.WriteString(s1);
             output.Flush();
@@ -378,7 +379,7 @@ namespace Google.Protobuf
             }
             string s1 = sb.ToString();
 
-            ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>();
+            ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>(1024);
             CodedOutputWriter output = new CodedOutputWriter(rawOutput);
             output.WriteString(s1);
             output.Flush();
@@ -402,8 +403,9 @@ namespace Google.Protobuf
             }
             string s1 = sb.ToString();
 
-            ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>();
-            CodedOutputWriter output = new CodedOutputWriter(rawOutput);
+            ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>(1024);
+            // Limit the max span size to force string to be written in multiple parts
+            CodedOutputWriter output = new CodedOutputWriter(new MaxSizeHintBufferWriter<byte>(rawOutput, 1024));
             output.WriteString(s1);
             output.Flush();
 
@@ -412,7 +414,7 @@ namespace Google.Protobuf
 
             Assert.AreEqual(s1, s2);
 
-            CodedInputReader input = new CodedInputReader(new ReadOnlySequence<byte>(rawOutput.WrittenSpan.ToArray()));
+            CodedInputReader input = new CodedInputReader(ReadOnlySequenceFactory.SegmentPerByteFactory.CreateWithContent(rawOutput.WrittenSpan.ToArray()));
             Assert.AreEqual(s1, input.ReadString());
         }
 
@@ -426,8 +428,9 @@ namespace Google.Protobuf
             }
             string s1 = sb.ToString();
 
-            ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>();
-            CodedOutputWriter output = new CodedOutputWriter(rawOutput);
+            ArrayBufferWriter<byte> rawOutput = new ArrayBufferWriter<byte>(1024);
+            // Limit the max span size to force string to be written in multiple parts
+            CodedOutputWriter output = new CodedOutputWriter(new MaxSizeHintBufferWriter<byte>(rawOutput, 1024));
             output.WriteString(s1);
             output.Flush();
 
@@ -435,9 +438,31 @@ namespace Google.Protobuf
             string s2 = Encoding.UTF8.GetString(textData);
 
             Assert.AreEqual(s1, s2);
-
-            CodedInputReader input = new CodedInputReader(new ReadOnlySequence<byte>(rawOutput.WrittenSpan.ToArray()));
+            
+            CodedInputReader input = new CodedInputReader(ReadOnlySequenceFactory.SegmentPerByteFactory.CreateWithContent(rawOutput.WrittenSpan.ToArray()));
             Assert.AreEqual(s1, input.ReadString());
+        }
+
+        [Test]
+        public void WriteFloat()
+        {
+            AssertWriteFloat(new byte[] { 0, 0, 0, 0 }, 0f);
+            AssertWriteFloat(new byte[] { 205, 204, 140, 63 }, 1.1f);
+            AssertWriteFloat(new byte[] { 255, 255, 127, 127 }, float.MaxValue);
+            AssertWriteFloat(new byte[] { 255, 255, 127, 255 }, float.MinValue);
+        }
+
+        /// <summary>
+        /// Parses the given bytes using WriteFloat() and checks
+        /// that the result matches the given value.
+        /// </summary>
+        private static void AssertWriteFloat(byte[] data, float value)
+        {
+            MemoryStream rawOutput = new MemoryStream();
+            CodedOutputStream output = new CodedOutputStream(rawOutput);
+            output.WriteFloat(value);
+            output.Flush();
+            Assert.AreEqual(data, rawOutput.ToArray());
         }
     }
 }

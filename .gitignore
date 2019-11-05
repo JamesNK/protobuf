@@ -206,3 +206,6 @@ cmake/cmake-build-debug/
 # IntelliJ
 .idea
 *.iml
+
+# Visual Studio test coverage
+*.coverage
