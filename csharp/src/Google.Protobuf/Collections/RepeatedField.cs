@@ -135,7 +135,7 @@ namespace Google.Protobuf.Collections
             // TODO: Inline some of the Add code, so we can avoid checking the size on every
             // iteration.
             uint tag = input.LastTag;
-            var reader = codec.ValueSpanReader;
+            var reader = codec.BufferValueReader;
             // Non-nullable value types can be packed or not.
             if (FieldCodec<T>.IsPackedRepeatedField(tag))
             {
@@ -271,7 +271,7 @@ namespace Google.Protobuf.Collections
             {
                 return;
             }
-            var writer = codec.ValueSpanWriter;
+            var writer = codec.BufferValueWriter;
             var tag = codec.Tag;
             if (codec.PackedRepeatedField)
             {

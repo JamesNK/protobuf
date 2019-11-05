@@ -408,7 +408,7 @@ namespace Google.Protobuf
         /// <summary>
         /// Reads an embedded message field value from the stream.
         /// </summary>   
-        public void ReadMessage(ISpanMessage builder)
+        public void ReadMessage(IBufferMessage builder)
         {
             int length = ReadLength();
             if (recursionDepth >= recursionLimit)
@@ -426,7 +426,7 @@ namespace Google.Protobuf
         /// <summary>
         /// Reads an embedded group field from the stream.
         /// </summary>
-        public void ReadGroup(ISpanMessage builder)
+        public void ReadGroup(IBufferMessage builder)
         {
             if (recursionDepth >= recursionLimit)
             {
