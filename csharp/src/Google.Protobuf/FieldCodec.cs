@@ -549,14 +549,7 @@ namespace Google.Protobuf
                     return message;
                 },
                 (output, value) => output.WriteMessage(value),
-#if GOOGLE_PROTOBUF_SUPPORT_SPAN
-                (ref CodedInputReader input) =>
-                {
-                    throw new NotSupportedException();
-                },
-                (ref CodedOutputWriter output, T value) => throw new NotSupportedException(),
-#endif
-                (CodedInputStream i, ref T v) => 
+                (CodedInputStream i, ref T v) =>
                 {
                     if (v == null)
                     {
@@ -581,6 +574,44 @@ namespace Google.Protobuf
                     }
                     return true;
                 }, 
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
+                (ref CodedInputReader input) =>
+                {
+                    T message = parser.CreateTemplate();
+
+                    if (message is IBufferMessage m)
+                    {
+                        input.ReadMessage(m);
+                        return message;
+                    }
+
+                    throw new NotSupportedException(nameof(T) + " doesn't implement " + nameof(IBufferMessage));
+                },
+                (ref CodedOutputWriter output, T value) =>
+                {
+                    if (value is IBufferMessage m)
+                    {
+                        output.WriteMessage(m);
+                    }
+
+                    throw new NotSupportedException(nameof(T) + " doesn't implement " + nameof(IBufferMessage));
+                },
+                (ref CodedInputReader i, ref T v) =>
+                {
+                    if (v == null)
+                    {
+                        v = parser.CreateTemplate();
+                    }
+
+                    if (v is IBufferMessage m)
+                    {
+                        i.ReadMessage(m);
+                        return;
+                    }
+
+                    throw new NotSupportedException(nameof(T) + " doesn't implement " + nameof(IBufferMessage));
+                },
+#endif
                 message => CodedOutputStream.ComputeMessageSize(message), tag);
         }
 
@@ -601,14 +632,7 @@ namespace Google.Protobuf
                     return message;
                 },
                 (output, value) => output.WriteGroup(value),
-#if GOOGLE_PROTOBUF_SUPPORT_SPAN
-                (ref CodedInputReader input) =>
-                {
-                    throw new NotSupportedException();
-                },
-                (ref CodedOutputWriter output, T value) => throw new NotSupportedException(),
-#endif
-                (CodedInputStream i, ref T v) => 
+                (CodedInputStream i, ref T v) =>
                 {
                     if (v == null)
                     {
@@ -633,6 +657,45 @@ namespace Google.Protobuf
                     }
                     return true;
                 }, 
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
+                (ref CodedInputReader input) =>
+                {
+                    T message = parser.CreateTemplate();
+
+                    if (message is IBufferMessage m)
+                    {
+                        input.ReadGroup(m);
+                        return message;
+                    }
+
+                    throw new NotSupportedException(nameof(T) + " doesn't implement " + nameof(IBufferMessage));
+                },
+                (ref CodedOutputWriter output, T value) =>
+                {
+                    if (value is IBufferMessage m)
+                    {
+                        output.WriteGroup(m);
+                        return;
+                    }
+
+                    throw new NotSupportedException(nameof(T) + " doesn't implement " + nameof(IBufferMessage));
+                },
+                (ref CodedInputReader i, ref T v) =>
+                {
+                    if (v == null)
+                    {
+                        v = parser.CreateTemplate();
+                    }
+
+                    if (v is IBufferMessage m)
+                    {
+                        i.ReadGroup(m);
+                        return;
+                    }
+
+                    throw new NotSupportedException(nameof(T) + " doesn't implement " + nameof(IBufferMessage));
+                },
+#endif
                 message => CodedOutputStream.ComputeGroupSize(message), startTag, endTag);
         }
 
@@ -645,12 +708,13 @@ namespace Google.Protobuf
             return new FieldCodec<T>(
                 input => WrapperCodecs.Read<T>(input, nestedCodec),
                 (output, value) => WrapperCodecs.Write<T>(output, value, nestedCodec),
+                (CodedInputStream i, ref T v) => v = WrapperCodecs.Read<T>(i, nestedCodec),
+                (ref T v, T v2) => { v = v2; return v == null; },
 #if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => WrapperCodecs.Read<T>(ref input, nestedCodec),
                 (ref CodedOutputWriter output, T value) => WrapperCodecs.Write<T>(ref output, value, nestedCodec),
+                (ref CodedInputReader i, ref T v) => v = WrapperCodecs.Read<T>(ref i, nestedCodec),
 #endif
-                (CodedInputStream i, ref T v) => v = WrapperCodecs.Read<T>(i, nestedCodec),
-                (ref T v, T v2) => { v = v2; return v == null; },
                 value => WrapperCodecs.CalculateSize<T>(value, nestedCodec),
                 tag, 0,
                 null); // Default value for the wrapper
@@ -666,12 +730,13 @@ namespace Google.Protobuf
             return new FieldCodec<T?>(
                 WrapperCodecs.GetReader<T>(),
                 (output, value) => WrapperCodecs.Write<T>(output, value.Value, nestedCodec),
+                (CodedInputStream i, ref T? v) => v = WrapperCodecs.Read<T>(i, nestedCodec),
+                (ref T? v, T? v2) => { if (v2.HasValue) { v = v2; } return v.HasValue; },
 #if GOOGLE_PROTOBUF_SUPPORT_SPAN
                 (ref CodedInputReader input) => WrapperCodecs.Read<T>(ref input, nestedCodec),
                 (ref CodedOutputWriter output, T? value) => WrapperCodecs.Write<T>(ref output, value.Value, nestedCodec),
+                (ref CodedInputReader i, ref T? v) => v = WrapperCodecs.Read<T>(ref i, nestedCodec),
 #endif
-                (CodedInputStream i, ref T? v) => v = WrapperCodecs.Read<T>(i, nestedCodec),
-                (ref T? v, T? v2) => { if (v2.HasValue) { v = v2; } return v.HasValue; },
                 value => value == null ? 0 : WrapperCodecs.CalculateSize<T>(value.Value, nestedCodec),
                 tag, 0,
                 null); // Default value for the wrapper
@@ -855,8 +920,9 @@ namespace Google.Protobuf
         internal delegate bool ValuesMerger(ref T value, T other);
 
 #if GOOGLE_PROTOBUF_SUPPORT_SPAN
-        internal delegate void WriterAction<in TValue>(ref CodedOutputWriter writer, TValue value);
-        internal delegate TValue ReaderFunc<out TValue>(ref CodedInputReader reader);
+        internal delegate void BufferWriter<in TValue>(ref CodedOutputWriter writer, TValue value);
+        internal delegate TValue BufferReader<out TValue>(ref CodedInputReader reader);
+        internal delegate void BufferInputMerger<in TValue>(ref CodedInputReader input, ref T value);
 #endif
 
         static FieldCodec()
@@ -886,7 +952,7 @@ namespace Google.Protobuf
         /// <summary>
         /// Returns a delegate to write a value (unconditionally) to a coded output writer.
         /// </summary>
-        internal WriterAction<T> ValueSpanWriter { get; }
+        internal BufferWriter<T> BufferValueWriter { get; }
 #endif
 
         /// <summary>
@@ -905,7 +971,7 @@ namespace Google.Protobuf
         /// Returns a delegate to read a value from a coded input reader. It is assumed that
         /// the reader is already positioned on the appropriate tag.
         /// </summary>
-        internal ReaderFunc<T> ValueSpanReader { get; }
+        internal BufferReader<T> BufferValueReader { get; }
 #endif
 
         /// <summary>
@@ -913,6 +979,14 @@ namespace Google.Protobuf
         /// It is assumed that the stream is already positioned on the appropriate tag
         /// </summary>
         internal InputMerger ValueMerger { get; }
+
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
+        /// <summary>
+        /// Returns a delegate to merge a value from a coded input stream.
+        /// It is assumed that the stream is already positioned on the appropriate tag
+        /// </summary>
+        internal BufferInputMerger<T> BufferValueMerger { get; }
+#endif
 
         /// <summary>
         /// Returns a delegate to merge two values together.
@@ -956,8 +1030,8 @@ namespace Google.Protobuf
                 Func<CodedInputStream, T> reader,
                 Action<CodedOutputStream, T> writer,
 #if GOOGLE_PROTOBUF_SUPPORT_SPAN
-                ReaderFunc<T> spanReader,
-                WriterAction<T> spanWriter,
+                BufferReader<T> bufferReader,
+                BufferWriter<T> bufferWriter,
 #endif
                 int fixedSize,
                 uint tag,
@@ -965,8 +1039,8 @@ namespace Google.Protobuf
                     reader,
                     writer,
 #if GOOGLE_PROTOBUF_SUPPORT_SPAN
-                    spanReader,
-                    spanWriter,
+                    bufferReader,
+                    bufferWriter,
 #endif
                     _ => fixedSize,
                     tag,
@@ -979,20 +1053,21 @@ namespace Google.Protobuf
             Func<CodedInputStream, T> reader,
             Action<CodedOutputStream, T> writer,
 #if GOOGLE_PROTOBUF_SUPPORT_SPAN
-            ReaderFunc<T> spanReader,
-            WriterAction<T> spanWriter,
+            BufferReader<T> bufferReader,
+            BufferWriter<T> bufferWriter,
 #endif
             Func<T, int> sizeCalculator,
             uint tag,
             T defaultValue) : this(
                 reader,
                 writer,
-#if GOOGLE_PROTOBUF_SUPPORT_SPAN
-                spanReader,
-                spanWriter,
-#endif
                 (CodedInputStream i, ref T v) => v = reader(i),
                 (ref T v, T v2) => { v = v2; return true; },
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
+                bufferReader,
+                bufferWriter,
+                (ref CodedInputReader i, ref T v) => v = bufferReader(ref i),
+#endif
                 sizeCalculator,
                 tag,
                 0,
@@ -1003,23 +1078,25 @@ namespace Google.Protobuf
         internal FieldCodec(
             Func<CodedInputStream, T> reader,
             Action<CodedOutputStream, T> writer,
-#if GOOGLE_PROTOBUF_SUPPORT_SPAN
-            ReaderFunc<T> spanReader,
-            WriterAction<T> spanWriter,
-#endif
             InputMerger inputMerger,
             ValuesMerger valuesMerger,
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
+            BufferReader<T> bufferReader,
+            BufferWriter<T> bufferWriter,
+            BufferInputMerger<T> bufferInputMerger,
+#endif
             Func<T, int> sizeCalculator,
             uint tag,
             uint endTag = 0) : this(
                 reader,
                 writer,
-#if GOOGLE_PROTOBUF_SUPPORT_SPAN
-                spanReader,
-                spanWriter,
-#endif
                 inputMerger,
                 valuesMerger,
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
+                bufferReader,
+                bufferWriter,
+                bufferInputMerger,
+#endif
                 sizeCalculator,
                 tag,
                 endTag,
@@ -1030,12 +1107,13 @@ namespace Google.Protobuf
         internal FieldCodec(
             Func<CodedInputStream, T> reader,
             Action<CodedOutputStream, T> writer,
-#if GOOGLE_PROTOBUF_SUPPORT_SPAN
-            ReaderFunc<T> spanReader,
-            WriterAction<T> spanWriter,
-#endif
             InputMerger inputMerger,
             ValuesMerger valuesMerger,
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
+            BufferReader<T> bufferReader,
+            BufferWriter<T> bufferWriter,
+            BufferInputMerger<T> bufferInputMerger,
+#endif
             Func<T, int> sizeCalculator,
             uint tag,
             uint endTag,
@@ -1043,12 +1121,13 @@ namespace Google.Protobuf
         {
             ValueReader = reader;
             ValueWriter = writer;
-#if GOOGLE_PROTOBUF_SUPPORT_SPAN
-            ValueSpanReader = spanReader;
-            ValueSpanWriter = spanWriter;
-#endif
             ValueMerger = inputMerger;
             FieldMerger = valuesMerger;
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
+            BufferValueReader = bufferReader;
+            BufferValueWriter = bufferWriter;
+            BufferValueMerger = bufferInputMerger;
+#endif
             ValueSizeCalculator = sizeCalculator;
             FixedSize = 0;
             Tag = tag;
@@ -1086,7 +1165,7 @@ namespace Google.Protobuf
             if (!IsDefault(value))
             {
                 output.WriteTag(Tag);
-                ValueSpanWriter(ref output, value);
+                BufferValueWriter(ref output, value);
                 if (EndTag != 0)
                 {
                     output.WriteTag(EndTag);
@@ -1108,7 +1187,7 @@ namespace Google.Protobuf
         /// </summary>
         /// <param name="input">The input stream to read from.</param>
         /// <returns>The value read from the stream.</returns>
-        public T Read(ref CodedInputReader input) => ValueSpanReader(ref input);
+        public T Read(ref CodedInputReader input) => BufferValueReader(ref input);
 #endif
 
         /// <summary>

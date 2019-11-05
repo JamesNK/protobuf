@@ -64,7 +64,7 @@ namespace Benchmarks.Proto3 {
 
   }
   #region Messages
-  public sealed partial class GoogleMessage1 : pb::IMessage<GoogleMessage1>, pb::ISpanMessage<GoogleMessage1> {
+  public sealed partial class GoogleMessage1 : pb::IMessage<GoogleMessage1>, pb::IBufferMessage {
     private static readonly pb::MessageParser<GoogleMessage1> _parser = new pb::MessageParser<GoogleMessage1>(() => new GoogleMessage1());
     private pb::UnknownFieldSet _unknownFields;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -77,11 +77,6 @@ namespace Benchmarks.Proto3 {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     pbr::MessageDescriptor pb::IMessage.Descriptor {
-      get { return Descriptor; }
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    pbr::MessageDescriptor pb::ISpanMessage.Descriptor {
       get { return Descriptor; }
     }
 
@@ -1752,7 +1747,7 @@ namespace Benchmarks.Proto3 {
 
     }
 
-    public sealed partial class GoogleMessage1SubMessage : pb::IMessage<GoogleMessage1SubMessage>, pb::ISpanMessage<GoogleMessage1SubMessage> {
+    public sealed partial class GoogleMessage1SubMessage : pb::IMessage<GoogleMessage1SubMessage>, pb::IBufferMessage {
     private static readonly pb::MessageParser<GoogleMessage1SubMessage> _parser = new pb::MessageParser<GoogleMessage1SubMessage>(() => new GoogleMessage1SubMessage());
     private pb::UnknownFieldSet _unknownFields;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1765,11 +1760,6 @@ namespace Benchmarks.Proto3 {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     pbr::MessageDescriptor pb::IMessage.Descriptor {
-      get { return Descriptor; }
-    }
-
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    pbr::MessageDescriptor pb::ISpanMessage.Descriptor {
       get { return Descriptor; }
     }
 

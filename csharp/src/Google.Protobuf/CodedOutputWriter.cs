@@ -255,7 +255,7 @@ namespace Google.Protobuf
         /// The data is length-prefixed.
         /// </summary>
         /// <param name="value">The value to write</param>
-        public void WriteMessage(ISpanMessage value)
+        public void WriteMessage(IBufferMessage value)
         {
             WriteLength(value.CalculateSize());
             value.WriteTo(ref this);
@@ -265,7 +265,7 @@ namespace Google.Protobuf
         /// Writes a group, without a tag, to the stream.
         /// </summary>
         /// <param name="value">The value to write</param>
-        public void WriteGroup(ISpanMessage value)
+        public void WriteGroup(IBufferMessage value)
         {
             value.WriteTo(ref this);
         }
