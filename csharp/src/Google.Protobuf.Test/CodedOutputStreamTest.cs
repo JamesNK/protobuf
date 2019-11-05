@@ -422,5 +422,27 @@ namespace Google.Protobuf
             var stream = new CodedOutputStream(new byte[10]);
             stream.Dispose();
         }
+
+        [Test]
+        public void WriteFloat()
+        {
+            AssertWriteFloat(new byte[] { 0, 0, 0, 0 }, 0f);
+            AssertWriteFloat(new byte[] { 205, 204, 140, 63 }, 1.1f);
+            AssertWriteFloat(new byte[] { 255, 255, 127, 127 }, float.MaxValue);
+            AssertWriteFloat(new byte[] { 255, 255, 127, 255 }, float.MinValue);
+        }
+
+        /// <summary>
+        /// Parses the given bytes using WriteFloat() and checks
+        /// that the result matches the given value.
+        /// </summary>
+        private static void AssertWriteFloat(byte[] data, float value)
+        {
+            MemoryStream rawOutput = new MemoryStream();
+            CodedOutputStream output = new CodedOutputStream(rawOutput);
+            output.WriteFloat(value);
+            output.Flush();
+            Assert.AreEqual(data, rawOutput.ToArray());
+        }
     }
 }
