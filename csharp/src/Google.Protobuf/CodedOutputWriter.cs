@@ -64,12 +64,30 @@ namespace Google.Protobuf
         // "Local" copy of Encoding.UTF8, for efficiency. (Yes, it makes a difference.)
         internal static readonly Encoding Utf8Encoding = Encoding.UTF8;
 
-        private BufferWriter writer;
         private Encoder encoder;
+
+        /// <summary>
+        /// The underlying <see cref="IBufferWriter{T}"/>.
+        /// </summary>
+        private IBufferWriter<byte> output;
+
+        /// <summary>
+        /// The cached span.
+        /// </summary>
+        private Span<byte> span;
+
+        /// <summary>
+        /// The number of uncommitted bytes in the cached span.
+        /// </summary>
+        private int buffered;
 
         public CodedOutputWriter(IBufferWriter<byte> writer)
         {
-            this.writer = new BufferWriter(writer);
+            buffered = 0;
+
+            span = writer.GetSpan();
+
+            this.output = writer;
             this.encoder = null;
         }
 
@@ -90,7 +108,8 @@ namespace Google.Protobuf
         /// <param name="value">The value to write</param>
         public void WriteFloat(float value)
         {
-            var floatSpan = writer.GetSpan(sizeof(float));
+            Ensure(sizeof(float));
+            Span<byte> floatSpan = span.Slice(buffered);
 
             Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(floatSpan), value);
 
@@ -99,7 +118,7 @@ namespace Google.Protobuf
                 floatSpan.Reverse();
             }
 
-            writer.Write(floatSpan);
+            buffered += sizeof(float);
         }
 
         /// <summary>
@@ -174,7 +193,8 @@ namespace Google.Protobuf
             int length = Utf8Encoding.GetByteCount(value);
             WriteLength(length);
 
-            Span<byte> buffer = writer.GetSpan(length);
+            Ensure(length);
+            Span<byte> buffer = span.Slice(buffered);
 
             if (buffer.Length >= length)
             {
@@ -187,13 +207,13 @@ namespace Google.Protobuf
                         buffer[i] = (byte)value[i];
                     }
 
-                    writer.Advance(length);
+                    buffered += length;
                 }
                 else
                 {
                     ReadOnlySpan<char> source = value.AsSpan();
                     int bytesUsed = Utf8Encoding.GetBytes(source, buffer);
-                    writer.Advance(bytesUsed);
+                    buffered += bytesUsed;
                 }
             }
             else
@@ -216,16 +236,16 @@ namespace Google.Protobuf
                     source = source.Slice(charsUsed);
                     written += bytesUsed;
 
-                    writer.Advance(bytesUsed);
+                    buffered += bytesUsed;
 
                     if (source.Length == 0)
                     {
                         break;
                     }
 
-                    buffer = writer.GetSpan(length - written);
+                    Ensure(length - written);
+                    buffer = span.Slice(buffered);
                 }
-
             }
         }
 
@@ -258,7 +278,7 @@ namespace Google.Protobuf
         {
             WriteLength(value.Length);
 
-            writer.Write(value.Span);
+            Write(value.Span);
         }
 
         /// <summary>
@@ -303,7 +323,7 @@ namespace Google.Protobuf
         /// <param name="value">The value to write</param>
         public void WriteSInt32(int value)
         {
-            WriteRawVarint32(EncodeZigZag32(value));
+            WriteRawVarint32(CodedOutputStream.EncodeZigZag32(value));
         }
 
         /// <summary>
@@ -312,7 +332,7 @@ namespace Google.Protobuf
         /// <param name="value">The value to write</param>
         public void WriteSInt64(long value)
         {
-            WriteRawVarint64(EncodeZigZag64(value));
+            WriteRawVarint64(CodedOutputStream.EncodeZigZag64(value));
         }
 
         /// <summary>
@@ -355,9 +375,12 @@ namespace Google.Protobuf
         /// <param name="b1">The encoded tag</param>
         public void WriteRawTag(byte b1)
         {
-            var span = writer.GetSpan(1);
-            span[0] = b1;
-            writer.Advance(1);
+            if (buffered > span.Length)
+            {
+                EnsureMore(1);
+            }
+
+            span[buffered++] = b1;
         }
 
         /// <summary>
@@ -367,10 +390,13 @@ namespace Google.Protobuf
         /// <param name="b2">The second byte of the encoded tag</param>
         public void WriteRawTag(byte b1, byte b2)
         {
-            var span = writer.GetSpan(2);
-            span[1] = b2;
-            span[0] = b1;
-            writer.Advance(2);
+            if (buffered + 1 > span.Length)
+            {
+                EnsureMore(2);
+            }
+
+            span[buffered++] = b1;
+            span[buffered++] = b2;
         }
 
         /// <summary>
@@ -381,11 +407,14 @@ namespace Google.Protobuf
         /// <param name="b3">The third byte of the encoded tag</param>
         public void WriteRawTag(byte b1, byte b2, byte b3)
         {
-            var span = writer.GetSpan(3);
-            span[2] = b3;
-            span[1] = b2;
-            span[0] = b1;
-            writer.Advance(3);
+            if (buffered + 2 > span.Length)
+            {
+                EnsureMore(2);
+            }
+
+            span[buffered++] = b1;
+            span[buffered++] = b2;
+            span[buffered++] = b3;
         }
 
         /// <summary>
@@ -397,12 +426,15 @@ namespace Google.Protobuf
         /// <param name="b4">The fourth byte of the encoded tag</param>
         public void WriteRawTag(byte b1, byte b2, byte b3, byte b4)
         {
-            var span = writer.GetSpan(4);
-            span[3] = b4;
-            span[2] = b3;
-            span[1] = b2;
-            span[0] = b1;
-            writer.Advance(4);
+            if (buffered + 3 > span.Length)
+            {
+                EnsureMore(2);
+            }
+
+            span[buffered++] = b1;
+            span[buffered++] = b2;
+            span[buffered++] = b3;
+            span[buffered++] = b4;
         }
 
         /// <summary>
@@ -415,13 +447,16 @@ namespace Google.Protobuf
         /// <param name="b5">The fifth byte of the encoded tag</param>
         public void WriteRawTag(byte b1, byte b2, byte b3, byte b4, byte b5)
         {
-            var span = writer.GetSpan(5);
-            span[4] = b5;
-            span[3] = b4;
-            span[2] = b3;
-            span[1] = b2;
-            span[0] = b1;
-            writer.Advance(5);
+            if (buffered + 4 > span.Length)
+            {
+                EnsureMore(2);
+            }
+
+            span[buffered++] = b1;
+            span[buffered++] = b2;
+            span[buffered++] = b3;
+            span[buffered++] = b4;
+            span[buffered++] = b5;
         }
         #endregion
 
@@ -434,78 +469,71 @@ namespace Google.Protobuf
         internal void WriteRawVarint32(uint value)
         {
             // Optimize for the common case of a single byte value
-            if (value < 128)
+            if (value < 128 && buffered < span.Length)
             {
-                var buffer = writer.GetSpan(1);
-                buffer[0] = (byte)value;
-                writer.Advance(1);
+                span[buffered++] = (byte)value;
             }
             else
             {
-                var buffer = writer.GetSpan(4);
-                var position = 0;
+                Ensure(4);
 
                 while (value > 127)
                 {
-                    buffer[position++] = (byte)((value & 0x7F) | 0x80);
+                    span[buffered++] = (byte)((value & 0x7F) | 0x80);
                     value >>= 7;
                 }
 
-                buffer[position++] = (byte)value;
-
-                writer.Advance(position);
+                span[buffered++] = (byte)value;
             }
         }
 
         internal void WriteRawVarint64(ulong value)
         {
             // Optimize for the common case of a single byte value
-            if (value < 128)
+            if (value < 128 && buffered < span.Length)
             {
-                var buffer = writer.GetSpan(1);
-                buffer[0] = (byte)value;
-                writer.Advance(1);
+                span[buffered++] = (byte)value;
             }
             else
             {
-                var buffer = writer.GetSpan(8);
-                var position = 0;
+                Ensure(8);
 
                 while (value > 127)
                 {
-                    buffer[position++] = (byte)((value & 0x7F) | 0x80);
+                    span[buffered++] = (byte)((value & 0x7F) | 0x80);
                     value >>= 7;
                 }
 
-                buffer[position++] = (byte)value;
-
-                writer.Advance(position);
+                span[buffered++] = (byte)value;
             }
         }
 
         internal void WriteRawLittleEndian32(uint value)
         {
-            var buffer = writer.GetSpan(4);
+            Ensure(4);
 
-            BinaryPrimitives.WriteUInt32LittleEndian(buffer, value);
+            BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(buffered), value);
 
-            writer.Advance(4);
+            buffered += 4;
         }
 
         internal void WriteRawLittleEndian64(ulong value)
         {
-            var buffer = writer.GetSpan(8);
+            Ensure(8);
 
-            BinaryPrimitives.WriteUInt64LittleEndian(buffer, value);
+            BinaryPrimitives.WriteUInt64LittleEndian(span.Slice(buffered), value);
 
-            writer.Advance(8);
+            buffered += 8;
         }
 
         internal void WriteRawByte(byte value)
         {
-            var buffer = writer.GetSpan(1);
-            buffer[0] = value;
-            writer.Advance(1);
+            if (buffered > span.Length)
+            {
+                EnsureMore(1);
+            }
+
+            span[buffered++] = value;
         }
 
         /// <summary>
@@ -521,44 +549,89 @@ namespace Google.Protobuf
         /// </summary>
         internal void WriteRawBytes(byte[] value, int offset, int length)
         {
-            writer.Write(value.AsSpan(offset, length));
+            Write(value.AsSpan(offset, length));
         }
 
         #endregion
 
+        #region Buffer
         /// <summary>
-        /// Encode a 32-bit value with ZigZag encoding.
+        /// Copies the caller's buffer into the writer.
         /// </summary>
-        /// <remarks>
-        /// ZigZag encodes signed integers into values that can be efficiently
-        /// encoded with varint.  (Otherwise, negative values must be 
-        /// sign-extended to 64 bits to be varint encoded, thus always taking
-        /// 10 bytes on the wire.)
-        /// </remarks>
-        internal static uint EncodeZigZag32(int n)
+        /// <param name="source">The buffer to copy in.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Write(ReadOnlySpan<byte> source)
         {
-            // Note:  the right-shift must be arithmetic
-            return (uint) ((n << 1) ^ (n >> 31));
+            if (span.Length - buffered >= source.Length)
+            {
+                source.CopyTo(span.Slice(buffered));
+                buffered += source.Length;
+            }
+            else
+            {
+                WriteMultiBuffer(source);
+            }
         }
 
         /// <summary>
-        /// Encode a 64-bit value with ZigZag encoding.
+        /// Acquires a new buffer if necessary to ensure that some given number of bytes can be written to a single buffer.
         /// </summary>
-        /// <remarks>
-        /// ZigZag encodes signed integers into values that can be efficiently
-        /// encoded with varint.  (Otherwise, negative values must be 
-        /// sign-extended to 64 bits to be varint encoded, thus always taking
-        /// 10 bytes on the wire.)
-        /// </remarks>
-        internal static ulong EncodeZigZag64(long n)
+        /// <param name="count">The number of bytes that must be allocated in a single buffer.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Ensure(int count = 1)
         {
-            return (ulong) ((n << 1) ^ (n >> 63));
+            if (span.Length < count + buffered)
+            {
+                EnsureMore(count);
+            }
         }
 
+        /// <summary>
+        /// Gets a fresh span to write to, with an optional minimum size.
+        /// </summary>
+        /// <param name="count">The minimum size for the next requested buffer.</param>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void EnsureMore(int count = 0)
+        {
+            if (buffered > 0)
+            {
+                Flush();
+            }
+
+            span = output.GetSpan(count);
+        }
+
+        /// <summary>
+        /// Copies the caller's buffer into this writer, potentially across multiple buffers from the underlying writer.
+        /// </summary>
+        /// <param name="source">The buffer to copy into this writer.</param>
+        private void WriteMultiBuffer(ReadOnlySpan<byte> source)
+        {
+            while (source.Length > 0)
+            {
+                Ensure(source.Length);
+
+                var writable = Math.Min(source.Length, span.Length);
+                source.Slice(0, writable).CopyTo(span.Slice(buffered));
+                source = source.Slice(writable);
+                buffered += writable;
+            }
+        }
+
+        /// <summary>
+        /// Flush uncommited data to the output writer.
+        /// </summary>
         public void Flush()
         {
-            writer.Commit();
+            var buffered = this.buffered;
+            if (buffered > 0)
+            {
+                this.buffered = 0;
+                output.Advance(buffered);
+                span = default;
+            }
         }
+        #endregion
     }
 }
 #endif
