@@ -104,12 +104,20 @@ namespace Google.Protobuf
             return tag;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ThrowEndOfStreamUnless(bool condition)
         {
             if (!condition)
             {
-                throw InvalidProtocolBufferException.TruncatedMessage();
+                ThrowEndOfStream();
+                return;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowEndOfStream()
+        {
+            throw InvalidProtocolBufferException.TruncatedMessage();
         }
 
         /// <summary>

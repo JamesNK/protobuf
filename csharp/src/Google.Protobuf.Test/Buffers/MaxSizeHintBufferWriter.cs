@@ -36,7 +36,7 @@ using System.Buffers;
 
 namespace Google.Protobuf.Buffers
 {
-    public class MaxSizeHintBufferWriter<T> : IBufferWriter<T>
+    internal class MaxSizeHintBufferWriter<T> : IBufferWriter<T>
     {
         private readonly IBufferWriter<T> bufferWriter;
         private readonly int maxSizeHint;

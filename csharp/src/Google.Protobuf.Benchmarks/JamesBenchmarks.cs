@@ -40,13 +40,21 @@ using System.Linq;
 
 namespace Google.Protobuf.Benchmarks
 {
+    public enum MessageSize
+    {
+        Empty,
+        Small,
+        Medium,
+        Large
+    }
+
     [MemoryDiagnoser]
     public class JamesBenchmarks
     {
         private GoogleMessage1 _message;
         private byte[] _messageData;
         private int _messageSize;
-        private BufferWriter _bufferWriter;
+        private ArrayBufferWriter<byte> _bufferWriter;
         private ReadOnlySequence<byte> _readOnlySequence;
 
         [GlobalSetup]
@@ -56,10 +64,31 @@ namespace Google.Protobuf.Benchmarks
             CodedOutputStream output = new CodedOutputStream(ms);
 
             GoogleMessage1 googleMessage1 = new GoogleMessage1();
-            googleMessage1.Field1 = "Text" + new string('!', 200);
-            googleMessage1.Field2 = 2;
-            googleMessage1.Field15 = new GoogleMessage1SubMessage();
-            googleMessage1.Field15.Field1 = 1;
+            switch (MessageSize)
+            {
+                case MessageSize.Empty:
+                    break;
+                case MessageSize.Small:
+                    googleMessage1.Field1 = "Text!";
+                    googleMessage1.Field2 = 2;
+                    googleMessage1.Field15 = new GoogleMessage1SubMessage();
+                    googleMessage1.Field15.Field1 = 1;
+                    break;
+                case MessageSize.Medium:
+                    googleMessage1.Field1 = "Text" + new string('!', 1024);
+                    googleMessage1.Field2 = 2;
+                    googleMessage1.Field15 = new GoogleMessage1SubMessage();
+                    googleMessage1.Field15.Field1 = 1;
+                    break;
+                case MessageSize.Large:
+                    googleMessage1.Field1 = "Text" + new string('!', 1024 * 512);
+                    googleMessage1.Field2 = 2;
+                    googleMessage1.Field15 = new GoogleMessage1SubMessage();
+                    googleMessage1.Field15.Field1 = 1;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(MessageSize));
+            }
 
             googleMessage1.WriteTo(output);
             output.Flush();
@@ -68,9 +97,17 @@ namespace Google.Protobuf.Benchmarks
             _messageData = ms.ToArray();
             _messageSize = googleMessage1.CalculateSize();
 
-            _bufferWriter = new BufferWriter(new byte[_messageSize]);
+            _bufferWriter = _messageSize > 0 ? new ArrayBufferWriter<byte>(_messageSize) : new ArrayBufferWriter<byte>();
             _readOnlySequence = new ReadOnlySequence<byte>(_messageData);
         }
+
+        [Params(
+            MessageSize.Empty,
+            MessageSize.Small,
+            MessageSize.Medium,
+            MessageSize.Large
+            )]
+        public MessageSize MessageSize { get; set; }
 
         [Benchmark]
         public void WriteToByteArray()
@@ -78,6 +115,16 @@ namespace Google.Protobuf.Benchmarks
             CodedOutputStream output = new CodedOutputStream(new byte[_messageSize]);
 
             _message.WriteTo(output);
+        }
+
+        [Benchmark]
+        public void WriteToBufferWriter()
+        {
+            CodedOutputWriter output = new CodedOutputWriter(_bufferWriter);
+
+            _message.WriteTo(ref output);
+
+            _bufferWriter.Clear();
         }
 
         [Benchmark]
@@ -93,53 +140,12 @@ namespace Google.Protobuf.Benchmarks
         }
 
         [Benchmark]
-        public void WriteToBufferWriter()
-        {
-            CodedOutputWriter output = new CodedOutputWriter(_bufferWriter);
-
-            _message.WriteTo(ref output);
-
-            _bufferWriter.Reset();
-        }
-
-        [Benchmark]
         public void ParseFromReadOnlySequence()
         {
             CodedInputReader input = new CodedInputReader(_readOnlySequence);
 
             GoogleMessage1 message = new GoogleMessage1();
             message.MergeFrom(ref input);
-        }
-    }
-
-    internal class BufferWriter : IBufferWriter<byte>
-    {
-        private readonly byte[] _buffer;
-        private int _position;
-
-        public BufferWriter(byte[] buffer)
-        {
-            _buffer = buffer;
-        }
-
-        public void Advance(int count)
-        {
-            _position += count;
-        }
-
-        public void Reset()
-        {
-            _position = 0;
-        }
-
-        public Memory<byte> GetMemory(int sizeHint = 0)
-        {
-            return _buffer.AsMemory(_position);
-        }
-
-        public Span<byte> GetSpan(int sizeHint = 0)
-        {
-            return _buffer.AsSpan(_position);
         }
     }
 }
