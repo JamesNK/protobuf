@@ -30,6 +30,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endregion
 
+using System;
 using BenchmarkDotNet.Running;
 
 namespace Google.Protobuf.Benchmarks
@@ -45,10 +46,22 @@ namespace Google.Protobuf.Benchmarks
             BenchmarkRunner.Run<JamesBenchmarks>();
 #else
             var b = new JamesBenchmarks();
+            b.MessageSize = MessageSize.Large;
             b.GlobalSetup();
 
-            b.ParseFromReadOnlySequence();
+            for (int i = 0; i < 1000; i++)
+            {
+                b.ParseFromByteArray();
+            }
+
+            Console.WriteLine("Press any key to start...");
+            Console.ReadKey();
+
+            b.ParseFromByteArray();
             //b.ParseFromByteArray();
+
+            Console.WriteLine("Done");
+            Console.ReadKey();
 #endif
         }
     }
