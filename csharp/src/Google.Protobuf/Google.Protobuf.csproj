@@ -5,7 +5,7 @@
     <Copyright>Copyright 2015, Google Inc.</Copyright>
     <AssemblyTitle>Google Protocol Buffers</AssemblyTitle>
     <VersionPrefix>3.11.0-rc0</VersionPrefix>
-    <LangVersion>6.0</LangVersion>
+    <LangVersion>6</LangVersion>
     <Authors>Google Inc.</Authors>
     <TargetFrameworks>netstandard1.0;netstandard2.0;netstandard2.1;net45</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -28,8 +28,8 @@
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.1' ">
     <DefineConstants>$(DefineConstants);GOOGLE_PROTOBUF_SUPPORT_SYSTEM_MEMORY;GOOGLE_PROTOBUF_SUPPORT_SPAN</DefineConstants>
-    <!-- C# 7.3 is required for Span/BufferWriter/ReadOnlySequence -->
-    <LangVersion>7.3</LangVersion>
+    <!-- C# 7.2 is required for Span/BufferWriter/ReadOnlySequence -->
+    <LangVersion>7.2</LangVersion>
   </PropertyGroup>
 
   <!-- Needed for the net45 build to work on Unix. See https://github.com/dotnet/designs/pull/33 -->
