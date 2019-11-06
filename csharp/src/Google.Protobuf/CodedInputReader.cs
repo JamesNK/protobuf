@@ -53,7 +53,7 @@ namespace Google.Protobuf
         private long currentLimit;
         private Decoder decoder;
 
-        public CodedInputReader(in ReadOnlySequence<byte> input)
+        public CodedInputReader(ReadOnlySequence<byte> input)
         {
             reader = new SequenceReader<byte>(input);
             lastTag = 0;

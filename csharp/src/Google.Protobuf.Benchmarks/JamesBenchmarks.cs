@@ -143,7 +143,7 @@ namespace Google.Protobuf.Benchmarks
         [Benchmark]
         public void ParseFromReadOnlySequence()
         {
-            CodedInputReader input = new CodedInputReader(in _readOnlySequence);
+            CodedInputReader input = new CodedInputReader(_readOnlySequence);
 
             GoogleMessage1 message = new GoogleMessage1();
             message.MergeFrom(ref input);
