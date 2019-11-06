@@ -61,9 +61,6 @@ namespace Google.Protobuf
     /// </remarks>
     public ref struct CodedOutputWriter
     {
-        // "Local" copy of Encoding.UTF8, for efficiency. (Yes, it makes a difference.)
-        internal static readonly Encoding Utf8Encoding = Encoding.UTF8;
-
         private Encoder encoder;
 
         /// <summary>
@@ -99,7 +96,7 @@ namespace Google.Protobuf
         /// <param name="value">The value to write</param>
         public void WriteDouble(double value)
         {
-            WriteRawLittleEndian64((ulong)BitConverter.DoubleToInt64Bits(value));
+            WriteRawLittleEndian64((ulong) BitConverter.DoubleToInt64Bits(value));
         }
 
         /// <summary>
@@ -108,17 +105,7 @@ namespace Google.Protobuf
         /// <param name="value">The value to write</param>
         public void WriteFloat(float value)
         {
-            Ensure(sizeof(float));
-            Span<byte> floatSpan = span.Slice(buffered);
-
-            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(floatSpan), value);
-
-            if (!BitConverter.IsLittleEndian)
-            {
-                floatSpan.Reverse();
-            }
-
-            buffered += sizeof(float);
+            WriteRawLittleEndian32((uint) BitConverter.SingleToInt32Bits(value));
         }
 
         /// <summary>
@@ -190,7 +177,7 @@ namespace Google.Protobuf
         /// <param name="value">The value to write</param>
         public void WriteString(string value)
         {
-            int length = Utf8Encoding.GetByteCount(value);
+            int length = Encoding.UTF8.GetByteCount(value);
             WriteLength(length);
 
             Ensure(length);
@@ -212,7 +199,7 @@ namespace Google.Protobuf
                 else
                 {
                     ReadOnlySpan<char> source = value.AsSpan();
-                    int bytesUsed = Utf8Encoding.GetBytes(source, buffer);
+                    int bytesUsed = Encoding.UTF8.GetBytes(source, buffer);
                     buffered += bytesUsed;
                 }
             }
@@ -221,7 +208,7 @@ namespace Google.Protobuf
                 // The destination byte array might not be large enough so multiple writes are sometimes required
                 if (encoder == null)
                 {
-                    encoder = Utf8Encoding.GetEncoder();
+                    encoder = Encoding.UTF8.GetEncoder();
                 }
 
                 ReadOnlySpan<char> source = value.AsSpan();
