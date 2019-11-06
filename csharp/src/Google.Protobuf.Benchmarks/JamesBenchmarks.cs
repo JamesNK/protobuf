@@ -123,6 +123,7 @@ namespace Google.Protobuf.Benchmarks
             CodedOutputWriter output = new CodedOutputWriter(_bufferWriter);
 
             _message.WriteTo(ref output);
+            output.Flush();
 
             _bufferWriter.Clear();
         }
@@ -142,7 +143,7 @@ namespace Google.Protobuf.Benchmarks
         [Benchmark]
         public void ParseFromReadOnlySequence()
         {
-            CodedInputReader input = new CodedInputReader(_readOnlySequence);
+            CodedInputReader input = new CodedInputReader(in _readOnlySequence);
 
             GoogleMessage1 message = new GoogleMessage1();
             message.MergeFrom(ref input);

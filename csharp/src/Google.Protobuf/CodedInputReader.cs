@@ -53,7 +53,7 @@ namespace Google.Protobuf
         private long currentLimit;
         private Decoder decoder;
 
-        public CodedInputReader(ReadOnlySequence<byte> input)
+        public CodedInputReader(in ReadOnlySequence<byte> input)
         {
             reader = new SequenceReader<byte>(input);
             lastTag = 0;
@@ -105,17 +105,17 @@ namespace Google.Protobuf
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ThrowEndOfStreamUnless(bool condition)
+        private void ThrowEndOfInputUnless(bool condition)
         {
             if (!condition)
             {
-                ThrowEndOfStream();
+                ThrowEndOfInput();
                 return;
             }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowEndOfStream()
+        private static void ThrowEndOfInput()
         {
             throw InvalidProtocolBufferException.TruncatedMessage();
         }
@@ -125,7 +125,7 @@ namespace Google.Protobuf
         /// </summary>
         /// <remarks>
         /// If this method returns 0, it doesn't necessarily mean the end of all
-        /// the data in this CodedInputStream; it may be the end of the logical stream
+        /// the data in this CodedInputReader; it may be the end of the logical stream
         /// for an embedded message, for example.
         /// </remarks>
         /// <returns>The next field tag, or 0 for end of stream. (0 is never a valid tag.)</returns>
@@ -137,7 +137,7 @@ namespace Google.Protobuf
             bool hasValue = reader.TryRead(out value);
             if (!hasValue)
             {
-                ThrowEndOfStreamUnless(IsAtEnd);
+                ThrowEndOfInputUnless(IsAtEnd);
 
                 // End of stream
                 lastTag = 0;
@@ -151,7 +151,7 @@ namespace Google.Protobuf
             else
             {
                 int result = value & 0x7f;
-                ThrowEndOfStreamUnless(reader.TryRead(out value));
+                ThrowEndOfInputUnless(reader.TryRead(out value));
                 if (value < 128)
                 {
                     result |= value << 7;
@@ -160,7 +160,7 @@ namespace Google.Protobuf
                 else
                 {
                     result = (value & 0x7f) << 7;
-                    ThrowEndOfStreamUnless(reader.TryRead(out value));
+                    ThrowEndOfInputUnless(reader.TryRead(out value));
                     if (value < 128)
                     {
                         result |= value << 14;
@@ -169,7 +169,7 @@ namespace Google.Protobuf
                     else
                     {
                         result = (value & 0x7f) << 14;
-                        ThrowEndOfStreamUnless(reader.TryRead(out value));
+                        ThrowEndOfInputUnless(reader.TryRead(out value));
                         result |= value << 21;
                         tag = (uint)result;
                     }
@@ -222,7 +222,7 @@ namespace Google.Protobuf
                     break;
                 case WireFormat.WireType.LengthDelimited:
                     var length = ReadLength();
-                    ThrowEndOfStreamUnless(reader.Remaining >= length);
+                    ThrowEndOfInputUnless(reader.Remaining >= length);
                     reader.Advance(length);
                     break;
                 case WireFormat.WireType.Varint:
@@ -284,10 +284,10 @@ namespace Google.Protobuf
         {
             Span<byte> data = stackalloc byte[sizeof(float)];
 
-            ThrowEndOfStreamUnless(reader.TryCopyTo(data));
+            ThrowEndOfInputUnless(reader.TryCopyTo(data));
             reader.Advance(sizeof(float));
 
-            return Unsafe.ReadUnaligned<float>(ref MemoryMarshal.GetReference(data));
+            return BitConverter.ToSingle(data);
         }
 
         /// <summary>
@@ -361,7 +361,7 @@ namespace Google.Protobuf
                 // Fast path: all bytes to decode appear in the same span.
                 ReadOnlySpan<byte> data = unreadSpan.Slice(0, length);
 
-                string value = CodedOutputStream.Utf8Encoding.GetString(data);
+                string value = Encoding.UTF8.GetString(data);
 
                 reader.Advance(length);
                 return value;
@@ -379,15 +379,15 @@ namespace Google.Protobuf
         /// <returns>The decoded string.</returns>
         private string ReadStringSlow(int byteLength)
         {
-            ThrowEndOfStreamUnless(reader.Remaining >= byteLength);
+            ThrowEndOfInputUnless(reader.Remaining >= byteLength);
 
             if (decoder == null)
             {
-                decoder = CodedOutputStream.Utf8Encoding.GetDecoder();
+                decoder = Encoding.UTF8.GetDecoder();
             }
 
             // We need to decode bytes incrementally across multiple spans.
-            int maxCharLength = CodedOutputStream.Utf8Encoding.GetMaxCharCount(byteLength);
+            int maxCharLength = Encoding.UTF8.GetMaxCharCount(byteLength);
             char[] charArray = ArrayPool<char>.Shared.Rent(maxCharLength);
 
             try
@@ -454,18 +454,26 @@ namespace Google.Protobuf
         {
             int length = ReadLength();
 
-            ThrowEndOfStreamUnless(reader.Remaining >= length);
+            if (length == 0)
+            {
+                return ByteString.Empty;
+            }
+
+            ThrowEndOfInputUnless(reader.Remaining >= length);
 
             if (length < 0)
             {
                 throw InvalidProtocolBufferException.NegativeSize();
             }
 
-            var data = reader.Sequence.Slice(reader.Position, length);
+            // Avoid creating a copy of Sequence if data is on current span
+            var data = (reader.UnreadSpan.Length <= length)
+                ? reader.UnreadSpan.Slice(length).ToArray()
+                : reader.Sequence.Slice(reader.Position, length).ToArray();
 
             reader.Advance(length);
 
-            return ByteString.AttachBytes(data.ToArray());
+            return ByteString.AttachBytes(data);
         }
 
         /// <summary>
@@ -553,14 +561,14 @@ namespace Google.Protobuf
         {
             byte value;
 
-            ThrowEndOfStreamUnless(reader.TryRead(out value));
+            ThrowEndOfInputUnless(reader.TryRead(out value));
             int tmp = value;
             if (tmp < 128)
             {
                 return (uint)tmp;
             }
             int result = tmp & 0x7f;
-            ThrowEndOfStreamUnless(reader.TryRead(out value));
+            ThrowEndOfInputUnless(reader.TryRead(out value));
             tmp = value;
             if (tmp < 128)
             {
@@ -569,7 +577,7 @@ namespace Google.Protobuf
             else
             {
                 result |= (tmp & 0x7f) << 7;
-                ThrowEndOfStreamUnless(reader.TryRead(out value));
+                ThrowEndOfInputUnless(reader.TryRead(out value));
                 tmp = value;
                 if (tmp < 128)
                 {
@@ -578,7 +586,7 @@ namespace Google.Protobuf
                 else
                 {
                     result |= (tmp & 0x7f) << 14;
-                    ThrowEndOfStreamUnless(reader.TryRead(out value));
+                    ThrowEndOfInputUnless(reader.TryRead(out value));
                     tmp = value;
                     if (tmp < 128)
                     {
@@ -587,7 +595,7 @@ namespace Google.Protobuf
                     else
                     {
                         result |= (tmp & 0x7f) << 21;
-                        ThrowEndOfStreamUnless(reader.TryRead(out value));
+                        ThrowEndOfInputUnless(reader.TryRead(out value));
                         tmp = value;
                         result |= tmp << 28;
                         if (tmp >= 128)
@@ -598,7 +606,7 @@ namespace Google.Protobuf
                             // use the fast path in more cases, and we rarely hit this section of code.
                             for (int i = 0; i < 5; i++)
                             {
-                                ThrowEndOfStreamUnless(reader.TryRead(out value));
+                                ThrowEndOfInputUnless(reader.TryRead(out value));
                                 tmp = value;
                                 if (tmp < 128)
                                 {
@@ -614,48 +622,6 @@ namespace Google.Protobuf
         }
 
         /// <summary>
-        /// Reads a varint from the input one byte at a time, so that it does not
-        /// read any bytes after the end of the varint. If you simply wrapped the
-        /// stream in a CodedInputStream and used ReadRawVarint32(Stream)
-        /// then you would probably end up reading past the end of the varint since
-        /// CodedInputStream buffers its input.
-        /// </summary>
-        /// <param name="input"></param>
-        /// <returns></returns>
-        internal static uint ReadRawVarint32(Stream input)
-        {
-            int result = 0;
-            int offset = 0;
-            for (; offset < 32; offset += 7)
-            {
-                int b = input.ReadByte();
-                if (b == -1)
-                {
-                    throw InvalidProtocolBufferException.TruncatedMessage();
-                }
-                result |= (b & 0x7f) << offset;
-                if ((b & 0x80) == 0)
-                {
-                    return (uint)result;
-                }
-            }
-            // Keep reading up to 64 bits.
-            for (; offset < 64; offset += 7)
-            {
-                int b = input.ReadByte();
-                if (b == -1)
-                {
-                    throw InvalidProtocolBufferException.TruncatedMessage();
-                }
-                if ((b & 0x80) == 0)
-                {
-                    return (uint)result;
-                }
-            }
-            throw InvalidProtocolBufferException.MalformedVarint();
-        }
-
-        /// <summary>
         /// Reads a raw varint from the stream.
         /// </summary>
         internal ulong ReadRawVarint64()
@@ -664,7 +630,7 @@ namespace Google.Protobuf
             ulong result = 0;
             while (shift < 64)
             {
-                ThrowEndOfStreamUnless(reader.TryRead(out byte b));
+                ThrowEndOfInputUnless(reader.TryRead(out byte b));
                 result |= (ulong)(b & 0x7F) << shift;
                 if ((b & 0x80) == 0)
                 {
@@ -682,7 +648,7 @@ namespace Google.Protobuf
         {
             Span<byte> data = stackalloc byte[4];
 
-            ThrowEndOfStreamUnless(reader.TryCopyTo(data));
+            ThrowEndOfInputUnless(reader.TryCopyTo(data));
             reader.Advance(4);
 
             return BinaryPrimitives.ReadUInt32LittleEndian(data);
@@ -695,7 +661,7 @@ namespace Google.Protobuf
         {
             Span<byte> data = stackalloc byte[8];
 
-            ThrowEndOfStreamUnless(reader.TryCopyTo(data));
+            ThrowEndOfInputUnless(reader.TryCopyTo(data));
             reader.Advance(8);
 
             return BinaryPrimitives.ReadUInt64LittleEndian(data);

@@ -46,12 +46,12 @@ namespace Google.Protobuf.Benchmarks
             BenchmarkRunner.Run<JamesBenchmarks>();
 #else
             var b = new JamesBenchmarks();
-            b.MessageSize = MessageSize.Large;
+            b.MessageSize = MessageSize.Small;
             b.GlobalSetup();
 
             for (int i = 0; i < 1000; i++)
             {
-                b.ParseFromByteArray();
+                b.ParseFromReadOnlySequence();
             }
 
             Console.WriteLine("Press any key to start...");
