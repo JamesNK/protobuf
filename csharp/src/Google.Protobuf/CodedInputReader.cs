@@ -280,14 +280,15 @@ namespace Google.Protobuf
         /// <summary>
         /// Reads a float field from the stream.
         /// </summary>
-        public float ReadFloat()
+        public unsafe float ReadFloat()
         {
-            Span<byte> data = stackalloc byte[sizeof(float)];
+            byte* buffer = stackalloc byte[sizeof(float)];
+            Span<byte> tempSpan = new Span<byte>(buffer, sizeof(float));
 
-            ThrowEndOfInputUnless(reader.TryCopyTo(data));
+            ThrowEndOfInputUnless(reader.TryCopyTo(tempSpan));
             reader.Advance(sizeof(float));
 
-            return BitConverter.ToSingle(data);
+            return Unsafe.ReadUnaligned<float>(ref MemoryMarshal.GetReference(tempSpan));
         }
 
         /// <summary>
@@ -361,7 +362,14 @@ namespace Google.Protobuf
                 // Fast path: all bytes to decode appear in the same span.
                 ReadOnlySpan<byte> data = unreadSpan.Slice(0, length);
 
-                string value = Encoding.UTF8.GetString(data);
+                string value;
+                unsafe
+                {
+                    fixed (byte* sourceBytes = &MemoryMarshal.GetReference(data))
+                    {
+                        value = Encoding.UTF8.GetString(sourceBytes, length);
+                    }
+                }
 
                 reader.Advance(length);
                 return value;
@@ -396,14 +404,20 @@ namespace Google.Protobuf
                 int initializedChars = 0;
                 while (remainingByteLength > 0)
                 {
-                    int bytesRead = Math.Min(remainingByteLength, this.reader.UnreadSpan.Length);
-                    ReadOnlySpan<byte> data = reader.UnreadSpan.Slice(0, bytesRead);
+                    int bytesRead = Math.Min(remainingByteLength, reader.UnreadSpan.Length);
                     remainingByteLength -= bytesRead;
                     bool flush = remainingByteLength == 0;
 
-                    initializedChars += decoder.GetChars(data, charArray.AsSpan(initializedChars), flush);
+                    unsafe
+                    {
+                        fixed (byte* pUnreadSpan = &MemoryMarshal.GetReference(reader.UnreadSpan))
+                        fixed (char* pCharArray = &charArray[initializedChars])
+                        {
+                            initializedChars += decoder.GetChars(pUnreadSpan, bytesRead, pCharArray, charArray.Length - initializedChars, flush);
+                        }
 
-                    reader.Advance(bytesRead);
+                        reader.Advance(bytesRead);
+                    }
                 }
 
                 string value = new string(charArray, 0, initializedChars);
@@ -644,27 +658,29 @@ namespace Google.Protobuf
         /// <summary>
         /// Reads a 32-bit little-endian integer from the stream.
         /// </summary>
-        internal uint ReadRawLittleEndian32()
+        internal unsafe uint ReadRawLittleEndian32()
         {
-            Span<byte> data = stackalloc byte[4];
+            byte* buffer = stackalloc byte[4];
+            Span<byte> tempSpan = new Span<byte>(buffer, 4);
 
-            ThrowEndOfInputUnless(reader.TryCopyTo(data));
+            ThrowEndOfInputUnless(reader.TryCopyTo(tempSpan));
             reader.Advance(4);
 
-            return BinaryPrimitives.ReadUInt32LittleEndian(data);
+            return BinaryPrimitives.ReadUInt32LittleEndian(tempSpan);
         }
 
         /// <summary>
         /// Reads a 64-bit little-endian integer from the stream.
         /// </summary>
-        internal ulong ReadRawLittleEndian64()
+        internal unsafe ulong ReadRawLittleEndian64()
         {
-            Span<byte> data = stackalloc byte[8];
+            byte* buffer = stackalloc byte[8];
+            Span<byte> tempSpan = new Span<byte>(buffer, 8);
 
-            ThrowEndOfInputUnless(reader.TryCopyTo(data));
+            ThrowEndOfInputUnless(reader.TryCopyTo(tempSpan));
             reader.Advance(8);
 
-            return BinaryPrimitives.ReadUInt64LittleEndian(data);
+            return BinaryPrimitives.ReadUInt64LittleEndian(tempSpan);
         }
 #endregion
 

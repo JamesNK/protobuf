@@ -166,7 +166,7 @@ namespace Google.Protobuf.Collections
         /// Calculates the size of this collection based on the given codec.
         /// </summary>
         /// <param name="codec">The codec to use when encoding each field.</param>
-        /// <returns>The number of bytes that would be written to a <see cref="CodedOutputStream"/> by <see cref="WriteTo"/>,
+        /// <returns>The number of bytes that would be written to output,
         /// using the same codec.</returns>
         public int CalculateSize(FieldCodec<T> codec)
         {
