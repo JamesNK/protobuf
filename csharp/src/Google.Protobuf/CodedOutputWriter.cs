@@ -396,7 +396,7 @@ namespace Google.Protobuf
         {
             if (buffered + 2 > span.Length)
             {
-                EnsureMore(2);
+                EnsureMore(3);
             }
 
             span[buffered++] = b1;
@@ -415,7 +415,7 @@ namespace Google.Protobuf
         {
             if (buffered + 3 > span.Length)
             {
-                EnsureMore(2);
+                EnsureMore(4);
             }
 
             span[buffered++] = b1;
@@ -436,7 +436,7 @@ namespace Google.Protobuf
         {
             if (buffered + 4 > span.Length)
             {
-                EnsureMore(2);
+                EnsureMore(5);
             }
 
             span[buffered++] = b1;
