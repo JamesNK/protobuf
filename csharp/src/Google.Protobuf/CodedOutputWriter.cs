@@ -105,7 +105,16 @@ namespace Google.Protobuf
         /// <param name="value">The value to write</param>
         public void WriteFloat(float value)
         {
-            WriteRawLittleEndian32((uint) BitConverter.SingleToInt32Bits(value));
+            Ensure(sizeof(float));
+
+            var floatSpan = span.Slice(buffered, sizeof(float));
+
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(floatSpan), value);
+
+            if (!BitConverter.IsLittleEndian)
+            {
+                floatSpan.Reverse();
+            }
         }
 
         /// <summary>
@@ -199,7 +208,18 @@ namespace Google.Protobuf
                 else
                 {
                     ReadOnlySpan<char> source = value.AsSpan();
-                    int bytesUsed = Encoding.UTF8.GetBytes(source, buffer);
+
+                    int bytesUsed;
+
+                    unsafe
+                    {
+                        fixed (char* sourceChars = &MemoryMarshal.GetReference(source))
+                        fixed (byte* destinationBytes = &MemoryMarshal.GetReference(buffer))
+                        {
+                            bytesUsed = Encoding.UTF8.GetBytes(sourceChars, source.Length, destinationBytes, buffer.Length);
+                        }
+                    }
+
                     buffered += bytesUsed;
                 }
             }
@@ -218,7 +238,15 @@ namespace Google.Protobuf
                 {
                     int bytesUsed;
                     int charsUsed;
-                    encoder.Convert(source, buffer, false, out charsUsed, out bytesUsed, out _);
+
+                    unsafe
+                    {
+                        fixed (char* sourceChars = &MemoryMarshal.GetReference(source))
+                        fixed (byte* destinationBytes = &MemoryMarshal.GetReference(buffer))
+                        {
+                            encoder.Convert(sourceChars, source.Length, destinationBytes, buffer.Length, false, out charsUsed, out bytesUsed, out _);
+                        }
+                    }
 
                     source = source.Slice(charsUsed);
                     written += bytesUsed;
