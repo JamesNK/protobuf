@@ -113,7 +113,7 @@ void WrapperFieldGenerator::GenerateMergingCode(io::Printer* printer) {
     "}\n");
 }
 
-void WrapperFieldGenerator::GenerateParsingCode(io::Printer* printer) {
+void WrapperFieldGenerator::GenerateParsingCode(io::Printer* printer, bool use_buffer_serialization) {
   printer->Print(
     variables_,
     "$type_name$ value = _single_$name$_codec.Read(input);\n"
@@ -122,7 +122,7 @@ void WrapperFieldGenerator::GenerateParsingCode(io::Printer* printer) {
     "}\n");
 }
 
-void WrapperFieldGenerator::GenerateSerializationCode(io::Printer* printer) {
+void WrapperFieldGenerator::GenerateSerializationCode(io::Printer* printer, bool use_buffer_serialization) {
   printer->Print(
     variables_,
     "if ($has_property_check$) {\n"
@@ -247,13 +247,13 @@ void WrapperOneofFieldGenerator::GenerateMergingCode(io::Printer* printer) {
   printer->Print(variables_, "$property_name$ = other.$property_name$;\n");
 }
 
-void WrapperOneofFieldGenerator::GenerateParsingCode(io::Printer* printer) {
+void WrapperOneofFieldGenerator::GenerateParsingCode(io::Printer* printer, bool use_buffer_serialization) {
   printer->Print(
     variables_,
     "$property_name$ = _oneof_$name$_codec.Read(input);\n");
 }
 
-void WrapperOneofFieldGenerator::GenerateSerializationCode(io::Printer* printer) {
+void WrapperOneofFieldGenerator::GenerateSerializationCode(io::Printer* printer, bool use_buffer_serialization) {
   // TODO: I suspect this is wrong...
   printer->Print(
     variables_,

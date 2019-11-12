@@ -54,12 +54,12 @@ EnumFieldGenerator::EnumFieldGenerator(const FieldDescriptor* descriptor,
 EnumFieldGenerator::~EnumFieldGenerator() {
 }
 
-void EnumFieldGenerator::GenerateParsingCode(io::Printer* printer) {
+void EnumFieldGenerator::GenerateParsingCode(io::Printer* printer, bool use_buffer_serialization) {
   printer->Print(variables_,
     "$property_name$ = ($type_name$) input.ReadEnum();\n");
 }
 
-void EnumFieldGenerator::GenerateSerializationCode(io::Printer* printer) {
+void EnumFieldGenerator::GenerateSerializationCode(io::Printer* printer, bool use_buffer_serialization) {
   printer->Print(variables_,
     "if ($has_property_check$) {\n"
     "  output.WriteRawTag($tag_bytes$);\n"
@@ -104,7 +104,7 @@ void EnumOneofFieldGenerator::GenerateMergingCode(io::Printer* printer) {
   printer->Print(variables_, "$property_name$ = other.$property_name$;\n");
 }
 
-void EnumOneofFieldGenerator::GenerateParsingCode(io::Printer* printer) {
+void EnumOneofFieldGenerator::GenerateParsingCode(io::Printer* printer, bool use_buffer_serialization) {
   // TODO(jonskeet): What about if we read the default value?
   printer->Print(
     variables_,
@@ -112,7 +112,7 @@ void EnumOneofFieldGenerator::GenerateParsingCode(io::Printer* printer) {
     "$oneof_name$Case_ = $oneof_property_name$OneofCase.$property_name$;\n");
 }
 
-void EnumOneofFieldGenerator::GenerateSerializationCode(io::Printer* printer) {
+void EnumOneofFieldGenerator::GenerateSerializationCode(io::Printer* printer, bool use_buffer_serialization) {
   printer->Print(
     variables_,
     "if ($has_property_check$) {\n"

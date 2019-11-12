@@ -52,8 +52,8 @@ class EnumFieldGenerator : public PrimitiveFieldGenerator {
   EnumFieldGenerator& operator=(const EnumFieldGenerator&) = delete;
 
   virtual void GenerateCodecCode(io::Printer* printer);
-  virtual void GenerateParsingCode(io::Printer* printer);
-  virtual void GenerateSerializationCode(io::Printer* printer);
+  virtual void GenerateParsingCode(io::Printer* printer, bool use_buffer_serialization);
+  virtual void GenerateSerializationCode(io::Printer* printer, bool use_buffer_serialization);
   virtual void GenerateSerializedSizeCode(io::Printer* printer);
   virtual void GenerateExtensionCode(io::Printer* printer);
 };
@@ -69,8 +69,8 @@ class EnumOneofFieldGenerator : public PrimitiveOneofFieldGenerator {
   EnumOneofFieldGenerator& operator=(const EnumOneofFieldGenerator&) = delete;
 
   virtual void GenerateMergingCode(io::Printer* printer);
-  virtual void GenerateParsingCode(io::Printer* printer);
-  virtual void GenerateSerializationCode(io::Printer* printer);
+  virtual void GenerateParsingCode(io::Printer* printer, bool use_buffer_serialization);
+  virtual void GenerateSerializationCode(io::Printer* printer, bool use_buffer_serialization);
   virtual void GenerateSerializedSizeCode(io::Printer* printer);
 };
 

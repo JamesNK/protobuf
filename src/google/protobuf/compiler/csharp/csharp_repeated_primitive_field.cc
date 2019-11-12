@@ -39,6 +39,7 @@
 
 #include <google/protobuf/compiler/csharp/csharp_doc_comment.h>
 #include <google/protobuf/compiler/csharp/csharp_helpers.h>
+#include <google/protobuf/compiler/csharp/csharp_options.h>
 #include <google/protobuf/compiler/csharp/csharp_repeated_primitive_field.h>
 
 namespace google {
@@ -77,16 +78,30 @@ void RepeatedPrimitiveFieldGenerator::GenerateMergingCode(io::Printer* printer) 
     "$name$_.Add(other.$name$_);\n");
 }
 
-void RepeatedPrimitiveFieldGenerator::GenerateParsingCode(io::Printer* printer) {
-  printer->Print(
-    variables_,
-    "$name$_.AddEntriesFrom(input, _repeated_$name$_codec);\n");
+void RepeatedPrimitiveFieldGenerator::GenerateParsingCode(io::Printer* printer, bool use_buffer_serialization) {
+  if (use_buffer_serialization)
+  {
+    printer->Print(
+      variables_,
+      "$name$_.AddEntriesFrom(ref input, _repeated_$name$_codec);\n");
+  } else {
+    printer->Print(
+      variables_,
+      "$name$_.AddEntriesFrom(input, _repeated_$name$_codec);\n");
+  }
 }
 
-void RepeatedPrimitiveFieldGenerator::GenerateSerializationCode(io::Printer* printer) {
-  printer->Print(
-    variables_,
-    "$name$_.WriteTo(output, _repeated_$name$_codec);\n");
+void RepeatedPrimitiveFieldGenerator::GenerateSerializationCode(io::Printer* printer, bool use_buffer_serialization) {
+  if (use_buffer_serialization)
+  {
+    printer->Print(
+      variables_,
+      "$name$_.WriteTo(ref output, _repeated_$name$_codec);\n");
+  } else {
+    printer->Print(
+      variables_,
+      "$name$_.WriteTo(output, _repeated_$name$_codec);\n");
+  }
 }
 
 void RepeatedPrimitiveFieldGenerator::GenerateSerializedSizeCode(io::Printer* printer) {

@@ -156,7 +156,7 @@ void PrimitiveFieldGenerator::GenerateMergingCode(io::Printer* printer) {
     "}\n");
 }
 
-void PrimitiveFieldGenerator::GenerateParsingCode(io::Printer* printer) {
+void PrimitiveFieldGenerator::GenerateParsingCode(io::Printer* printer, bool use_buffer_serialization) {
   // Note: invoke the property setter rather than writing straight to the field,
   // so that we can normalize "null to empty" for strings and bytes.
   printer->Print(
@@ -164,7 +164,7 @@ void PrimitiveFieldGenerator::GenerateParsingCode(io::Printer* printer) {
     "$property_name$ = input.Read$capitalized_type_name$();\n");
 }
 
-void PrimitiveFieldGenerator::GenerateSerializationCode(io::Printer* printer) {
+void PrimitiveFieldGenerator::GenerateSerializationCode(io::Printer* printer, bool use_buffer_serialization) {
   printer->Print(
     variables_,
     "if ($has_property_check$) {\n"

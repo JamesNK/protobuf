@@ -57,8 +57,8 @@ class PrimitiveFieldGenerator : public FieldGeneratorBase {
   virtual void GenerateCloningCode(io::Printer* printer);
   virtual void GenerateMembers(io::Printer* printer);
   virtual void GenerateMergingCode(io::Printer* printer);
-  virtual void GenerateParsingCode(io::Printer* printer);
-  virtual void GenerateSerializationCode(io::Printer* printer);
+  virtual void GenerateParsingCode(io::Printer* printer, bool use_buffer_serialization);
+  virtual void GenerateSerializationCode(io::Printer* printer, bool use_buffer_serialization);
   virtual void GenerateSerializedSizeCode(io::Printer* printer);
   virtual void GenerateExtensionCode(io::Printer* printer);
 

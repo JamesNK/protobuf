@@ -110,7 +110,7 @@ void MessageFieldGenerator::GenerateMergingCode(io::Printer* printer) {
     "}\n");
 }
 
-void MessageFieldGenerator::GenerateParsingCode(io::Printer* printer) {
+void MessageFieldGenerator::GenerateParsingCode(io::Printer* printer, bool use_buffer_serialization) {
   printer->Print(
     variables_,
     "if ($has_not_property_check$) {\n"
@@ -123,7 +123,7 @@ void MessageFieldGenerator::GenerateParsingCode(io::Printer* printer) {
   }
 }
 
-void MessageFieldGenerator::GenerateSerializationCode(io::Printer* printer) {
+void MessageFieldGenerator::GenerateSerializationCode(io::Printer* printer, bool use_buffer_serialization) {
   if (descriptor_->type() == FieldDescriptor::Type::TYPE_MESSAGE) {
     printer->Print(
       variables_,
@@ -260,7 +260,7 @@ void MessageOneofFieldGenerator::GenerateMergingCode(io::Printer* printer) {
     "$property_name$.MergeFrom(other.$property_name$);\n");
 }
 
-void MessageOneofFieldGenerator::GenerateParsingCode(io::Printer* printer) {
+void MessageOneofFieldGenerator::GenerateParsingCode(io::Printer* printer, bool use_buffer_serialization) {
   // TODO(jonskeet): We may be able to do better than this
   printer->Print(
     variables_,

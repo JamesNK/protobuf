@@ -40,6 +40,7 @@
 #include <google/protobuf/compiler/csharp/csharp_doc_comment.h>
 #include <google/protobuf/compiler/csharp/csharp_helpers.h>
 #include <google/protobuf/compiler/csharp/csharp_map_field.h>
+#include <google/protobuf/compiler/csharp/csharp_options.h>
 
 namespace google {
 namespace protobuf {
@@ -93,16 +94,30 @@ void MapFieldGenerator::GenerateMergingCode(io::Printer* printer) {
       "$name$_.Add(other.$name$_);\n");
 }
 
-void MapFieldGenerator::GenerateParsingCode(io::Printer* printer) {
-  printer->Print(
-    variables_,
-    "$name$_.AddEntriesFrom(input, _map_$name$_codec);\n");
+void MapFieldGenerator::GenerateParsingCode(io::Printer* printer, bool use_buffer_serialization) {
+  if (use_buffer_serialization)
+  {
+    printer->Print(
+      variables_,
+      "$name$_.AddEntriesFrom(ref input, _map_$name$_codec);\n");
+  } else {
+    printer->Print(
+      variables_,
+      "$name$_.AddEntriesFrom(input, _map_$name$_codec);\n");
+  }
 }
 
-void MapFieldGenerator::GenerateSerializationCode(io::Printer* printer) {
-  printer->Print(
-    variables_,
-    "$name$_.WriteTo(output, _map_$name$_codec);\n");
+void MapFieldGenerator::GenerateSerializationCode(io::Printer* printer, bool use_buffer_serialization) {
+  if (use_buffer_serialization)
+  {
+    printer->Print(
+      variables_,
+      "$name$_.WriteTo(ref output, _map_$name$_codec);\n");
+  } else {
+    printer->Print(
+      variables_,
+      "$name$_.WriteTo(output, _map_$name$_codec);\n");
+  }
 }
 
 void MapFieldGenerator::GenerateSerializedSizeCode(io::Printer* printer) {

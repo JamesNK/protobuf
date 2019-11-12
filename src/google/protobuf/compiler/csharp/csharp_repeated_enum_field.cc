@@ -39,6 +39,7 @@
 
 #include <google/protobuf/compiler/csharp/csharp_doc_comment.h>
 #include <google/protobuf/compiler/csharp/csharp_helpers.h>
+#include <google/protobuf/compiler/csharp/csharp_options.h>
 #include <google/protobuf/compiler/csharp/csharp_repeated_enum_field.h>
 
 namespace google {
@@ -77,16 +78,30 @@ void RepeatedEnumFieldGenerator::GenerateMergingCode(io::Printer* printer) {
     "$name$_.Add(other.$name$_);\n");
 }
 
-void RepeatedEnumFieldGenerator::GenerateParsingCode(io::Printer* printer) {
-  printer->Print(
-    variables_,
-    "$name$_.AddEntriesFrom(input, _repeated_$name$_codec);\n");
+void RepeatedEnumFieldGenerator::GenerateParsingCode(io::Printer* printer, bool use_buffer_serialization) {
+  if (use_buffer_serialization)
+  {
+    printer->Print(
+      variables_,
+      "$name$_.AddEntriesFrom(ref input, _repeated_$name$_codec);\n");
+  } else {
+    printer->Print(
+      variables_,
+      "$name$_.AddEntriesFrom(input, _repeated_$name$_codec);\n");
+  }
 }
 
-void RepeatedEnumFieldGenerator::GenerateSerializationCode(io::Printer* printer) {
-  printer->Print(
-    variables_,
-    "$name$_.WriteTo(output, _repeated_$name$_codec);\n");
+void RepeatedEnumFieldGenerator::GenerateSerializationCode(io::Printer* printer, bool use_buffer_serialization) {
+  if (use_buffer_serialization)
+  {
+    printer->Print(
+      variables_,
+      "$name$_.WriteTo(ref output, _repeated_$name$_codec);\n");
+  } else {
+    printer->Print(
+      variables_,
+      "$name$_.WriteTo(output, _repeated_$name$_codec);\n");
+  }
 }
 
 void RepeatedEnumFieldGenerator::GenerateSerializedSizeCode(io::Printer* printer) {

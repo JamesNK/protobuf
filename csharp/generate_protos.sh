@@ -73,7 +73,8 @@ $PROTOC -Iconformance -Isrc --csharp_out=csharp/src/Google.Protobuf.Conformance 
 $PROTOC -Ibenchmarks \
   benchmarks/datasets/google_message1/proto3/*.proto \
   benchmarks/benchmarks.proto \
-  --csharp_out=csharp/src/Google.Protobuf.Benchmarks
+  --csharp_out=csharp/src/Google.Protobuf.Benchmarks \
+  --csharp_opt=use_buffer_serialization
 
 # C# only benchmark protos
 $PROTOC -Isrc -Icsharp/src/Google.Protobuf.Benchmarks \
