@@ -513,37 +513,11 @@ void MessageGenerator::GenerateFrameworkMethods(io::Printer* printer) {
 }
 
 void MessageGenerator::GenerateMessageSerializationMethods(io::Printer* printer) {
-  WriteGeneratedCodeAttributes(printer);
-  printer->Print(
-      "public void WriteTo(pb::CodedOutputStream output) {\n");
-  printer->Indent();
-
-  // Serialize all the fields
-  for (int i = 0; i < fields_by_number().size(); i++) {
-    std::unique_ptr<FieldGeneratorBase> generator(
-      CreateFieldGeneratorInternal(fields_by_number()[i]));
-    generator->GenerateSerializationCode(printer);
+  GenerateWriteToOutputMethod(printer, false);
+  if (this->options()->support_span) {
+    GenerateWriteToOutputMethod(printer, true);
   }
 
-  if (has_extension_ranges_) {
-    // Serialize extensions
-    printer->Print(
-      "if (_extensions != null) {\n"
-      "  _extensions.WriteTo(output);\n"
-      "}\n");
-  }
-
-  // Serialize unknown fields
-  printer->Print(
-    "if (_unknownFields != null) {\n"
-    "  _unknownFields.WriteTo(output);\n"
-    "}\n");
-
-  // TODO(jonskeet): Memoize size of frozen messages?
-  printer->Outdent();
-  printer->Print(
-    "}\n"
-    "\n");
   WriteGeneratedCodeAttributes(printer);
   printer->Print(
     "public int CalculateSize() {\n");
@@ -570,6 +544,50 @@ void MessageGenerator::GenerateMessageSerializationMethods(io::Printer* printer)
   printer->Print("return size;\n");
   printer->Outdent();
   printer->Print("}\n\n");
+}
+
+void MessageGenerator::GenerateWriteToOutputMethod(io::Printer* printer, bool support_span) {
+  if (support_span) {
+    printer->Print("\n#if SUPPORT_SPAN\n");
+  }
+  WriteGeneratedCodeAttributes(printer);
+  if (support_span) {
+    printer->Print(
+      "public void WriteTo(ref pb::CodedOutputWriter output) {\n");
+  } else {
+    printer->Print(
+      "public void WriteTo(pb::CodedOutputStream output) {\n");
+  }
+  printer->Indent();
+
+  // Serialize all the fields
+  for (int i = 0; i < fields_by_number().size(); i++) {
+    std::unique_ptr<FieldGeneratorBase> generator(
+      CreateFieldGeneratorInternal(fields_by_number()[i]));
+    generator->GenerateSerializationCode(printer);
+  }
+
+  if (has_extension_ranges_) {
+    // Serialize extensions
+    printer->Print(
+      "if (_extensions != null) {\n"
+      "  _extensions.WriteTo(output);\n"
+      "}\n");
+  }
+
+  // Serialize unknown fields
+  printer->Print(
+    "if (_unknownFields != null) {\n"
+    "  _unknownFields.WriteTo(output);\n"
+    "}\n");
+
+  // TODO(jonskeet): Memoize size of frozen messages?
+  printer->Outdent();
+  printer->Print(
+    "}\n");
+  if (support_span) {
+    printer->Print("#endif\n");
+  }
 }
 
 void MessageGenerator::GenerateMergingMethods(io::Printer* printer) {
@@ -621,17 +639,28 @@ void MessageGenerator::GenerateMergingMethods(io::Printer* printer) {
   if (has_extension_ranges_) {
     printer->Print("pb::ExtensionSet.MergeFrom(ref _extensions, other._extensions);\n");
   }
-
   // Merge unknown fields.
   printer->Print(
       "_unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);\n");
-
   printer->Outdent();
   printer->Print("}\n\n");
 
+  GenerateMergeFromInput(printer, false);
+  if (this->options()->support_span) {
+    GenerateMergeFromInput(printer, true);
+  }
+}
 
+void MessageGenerator::GenerateMergeFromInput(io::Printer* printer, bool support_span) {
+  if (support_span) {
+    printer->Print("\n#if SUPPORT_SPAN\n");
+  }
   WriteGeneratedCodeAttributes(printer);
-  printer->Print("public void MergeFrom(pb::CodedInputStream input) {\n");
+  if (support_span) {
+    printer->Print("public void MergeFrom(ref pb::CodedInputReader input) {\n");
+  } else {
+    printer->Print("public void MergeFrom(pb::CodedInputStream input) {\n");
+  }
   printer->Indent();
   printer->Print(
     "uint tag;\n"
@@ -692,7 +721,11 @@ void MessageGenerator::GenerateMergingMethods(io::Printer* printer) {
   printer->Outdent();
   printer->Print("}\n"); // while
   printer->Outdent();
-  printer->Print("}\n\n"); // method
+  printer->Print("}\n"); // method
+  if (support_span) {
+    printer->Print("#endif\n");
+  }
+  printer->Print("\n");
 }
 
 // it's a waste of space to track presence for all values, so we only track them if they're not nullable

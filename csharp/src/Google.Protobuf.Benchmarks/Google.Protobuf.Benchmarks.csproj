@@ -4,6 +4,8 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <IsPackable>False</IsPackable>
+
+    <DefineConstants>$(DefineConstants);SUPPORT_SPAN</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

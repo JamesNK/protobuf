@@ -73,6 +73,7 @@ $PROTOC -Iconformance -Isrc --csharp_out=csharp/src/Google.Protobuf.Conformance 
 $PROTOC -Ibenchmarks \
   benchmarks/datasets/google_message1/proto3/*.proto \
   benchmarks/benchmarks.proto \
+  --csharp_opt=support_span \
   --csharp_out=csharp/src/Google.Protobuf.Benchmarks
 
 # C# only benchmark protos

@@ -186,6 +186,23 @@ namespace Benchmarks {
       }
     }
 
+    #if SUPPORT_SPAN
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void WriteTo(ref pb::CodedOutputWriter output) {
+      if (Name.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(Name);
+      }
+      if (MessageName.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(MessageName);
+      }
+      payload_.WriteTo(output, _repeated_payload_codec);
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    }
+    #endif
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public int CalculateSize() {
       int size = 0;
@@ -240,6 +257,33 @@ namespace Benchmarks {
         }
       }
     }
+
+
+    #if SUPPORT_SPAN
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    public void MergeFrom(ref pb::CodedInputReader input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 10: {
+            Name = input.ReadString();
+            break;
+          }
+          case 18: {
+            MessageName = input.ReadString();
+            break;
+          }
+          case 26: {
+            payload_.AddEntriesFrom(input, _repeated_payload_codec);
+            break;
+          }
+        }
+      }
+    }
+    #endif
 
   }
 
