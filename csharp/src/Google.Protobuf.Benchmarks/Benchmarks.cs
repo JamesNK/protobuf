@@ -38,7 +38,11 @@ namespace Benchmarks {
 
   }
   #region Messages
-  public sealed partial class BenchmarkDataset : pb::IMessage<BenchmarkDataset> {
+  public sealed partial class BenchmarkDataset : pb::IMessage<BenchmarkDataset>,
+  #if !PROTOBUF_DISABLE_BUFFER_SERIALIZATION
+  pb::IBufferMessage
+  #endif
+   {
     private static readonly pb::MessageParser<BenchmarkDataset> _parser = new pb::MessageParser<BenchmarkDataset>(() => new BenchmarkDataset());
     private pb::UnknownFieldSet _unknownFields;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -186,7 +190,8 @@ namespace Benchmarks {
       }
     }
 
-    #if SUPPORT_SPAN
+
+    #if !PROTOBUF_DISABLE_BUFFER_SERIALIZATION
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public void WriteTo(ref pb::CodedOutputWriter output) {
       if (Name.Length != 0) {
@@ -199,10 +204,11 @@ namespace Benchmarks {
       }
       payload_.WriteTo(output, _repeated_payload_codec);
       if (_unknownFields != null) {
-        _unknownFields.WriteTo(output);
+        _unknownFields.WriteTo(ref output);
       }
     }
     #endif
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public int CalculateSize() {
       int size = 0;
@@ -259,14 +265,14 @@ namespace Benchmarks {
     }
 
 
-    #if SUPPORT_SPAN
+    #if !PROTOBUF_DISABLE_BUFFER_SERIALIZATION
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public void MergeFrom(ref pb::CodedInputReader input) {
       uint tag;
       while ((tag = input.ReadTag()) != 0) {
         switch(tag) {
           default:
-            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
             break;
           case 10: {
             Name = input.ReadString();

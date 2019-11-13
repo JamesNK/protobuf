@@ -75,8 +75,8 @@ bool Generator::Generate(
       cli_options.internal_access = true;
     } else if (options[i].first == "serializable") {
       cli_options.serializable = true;
-    } else if (options[i].first == "support_span") {
-      cli_options.support_span = true;
+    } else if (options[i].first == "disable_buffer_serialization") {
+      cli_options.disable_buffer_serialization = true;
     } else {
       *error = "Unknown generator option: " + options[i].first;
       return false;

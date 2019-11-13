@@ -132,6 +132,16 @@ void MessageGenerator::Generate(io::Printer* printer) {
   else {
     printer->Print(vars, "pb::IMessage<$class_name$>");
   }
+
+  if (!this->options()->disable_buffer_serialization)
+  {
+    printer->Print(
+      ",\n"
+      "#if !PROTOBUF_DISABLE_BUFFER_SERIALIZATION\n"
+      "pb::IBufferMessage\n"
+      "#endif\n");
+  }
+
   printer->Print(" {\n");
   printer->Indent();
 
@@ -513,9 +523,9 @@ void MessageGenerator::GenerateFrameworkMethods(io::Printer* printer) {
 }
 
 void MessageGenerator::GenerateMessageSerializationMethods(io::Printer* printer) {
-  GenerateWriteToOutputMethod(printer, false);
-  if (this->options()->support_span) {
-    GenerateWriteToOutputMethod(printer, true);
+  GenerateWriteToOutputMethod(printer, true);
+  if (!this->options()->disable_buffer_serialization) {
+    GenerateWriteToOutputMethod(printer, false);
   }
 
   WriteGeneratedCodeAttributes(printer);
@@ -546,12 +556,12 @@ void MessageGenerator::GenerateMessageSerializationMethods(io::Printer* printer)
   printer->Print("}\n\n");
 }
 
-void MessageGenerator::GenerateWriteToOutputMethod(io::Printer* printer, bool support_span) {
-  if (support_span) {
-    printer->Print("\n#if SUPPORT_SPAN\n");
+void MessageGenerator::GenerateWriteToOutputMethod(io::Printer* printer, bool disable_buffer_serialization) {
+  if (!disable_buffer_serialization) {
+    printer->Print("\n#if !PROTOBUF_DISABLE_BUFFER_SERIALIZATION\n");
   }
   WriteGeneratedCodeAttributes(printer);
-  if (support_span) {
+  if (!disable_buffer_serialization) {
     printer->Print(
       "public void WriteTo(ref pb::CodedOutputWriter output) {\n");
   } else {
@@ -577,17 +587,25 @@ void MessageGenerator::GenerateWriteToOutputMethod(io::Printer* printer, bool su
 
   // Serialize unknown fields
   printer->Print(
-    "if (_unknownFields != null) {\n"
-    "  _unknownFields.WriteTo(output);\n"
-    "}\n");
+      "if (_unknownFields != null) {\n");
+  if (!disable_buffer_serialization) {
+    printer->Print(
+      "  _unknownFields.WriteTo(ref output);\n");
+  } else {
+    printer->Print(
+      "  _unknownFields.WriteTo(output);\n");
+  }
+  printer->Print(
+      "}\n");
 
   // TODO(jonskeet): Memoize size of frozen messages?
   printer->Outdent();
   printer->Print(
     "}\n");
-  if (support_span) {
+  if (!disable_buffer_serialization) {
     printer->Print("#endif\n");
   }
+  printer->Print("\n");
 }
 
 void MessageGenerator::GenerateMergingMethods(io::Printer* printer) {
@@ -645,18 +663,18 @@ void MessageGenerator::GenerateMergingMethods(io::Printer* printer) {
   printer->Outdent();
   printer->Print("}\n\n");
 
-  GenerateMergeFromInput(printer, false);
-  if (this->options()->support_span) {
-    GenerateMergeFromInput(printer, true);
+  GenerateMergeFromInput(printer, true);
+  if (!this->options()->disable_buffer_serialization) {
+    GenerateMergeFromInput(printer, false);
   }
 }
 
-void MessageGenerator::GenerateMergeFromInput(io::Printer* printer, bool support_span) {
-  if (support_span) {
-    printer->Print("\n#if SUPPORT_SPAN\n");
+void MessageGenerator::GenerateMergeFromInput(io::Printer* printer, bool disable_buffer_serialization) {
+  if (!disable_buffer_serialization) {
+    printer->Print("\n#if !PROTOBUF_DISABLE_BUFFER_SERIALIZATION\n");
   }
   WriteGeneratedCodeAttributes(printer);
-  if (support_span) {
+  if (!disable_buffer_serialization) {
     printer->Print("public void MergeFrom(ref pb::CodedInputReader input) {\n");
   } else {
     printer->Print("public void MergeFrom(pb::CodedInputStream input) {\n");
@@ -683,8 +701,15 @@ void MessageGenerator::GenerateMergeFromInput(io::Printer* printer, bool support
       "  break;\n");
   } else {
     printer->Print(
-      "default:\n"
-      "  _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);\n"
+      "default:\n");
+    if (!disable_buffer_serialization) {
+      printer->Print(
+      "  _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);\n");
+    } else {
+      printer->Print(
+      "  _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);\n");
+    }
+    printer->Print(
       "  break;\n");
   }
   for (int i = 0; i < fields_by_number().size(); i++) {
@@ -722,7 +747,7 @@ void MessageGenerator::GenerateMergeFromInput(io::Printer* printer, bool support
   printer->Print("}\n"); // while
   printer->Outdent();
   printer->Print("}\n"); // method
-  if (support_span) {
+  if (!disable_buffer_serialization) {
     printer->Print("#endif\n");
   }
   printer->Print("\n");

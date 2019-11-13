@@ -27,7 +27,7 @@ fi
 
 # descriptor.proto and well-known types
 $PROTOC -Isrc --csharp_out=csharp/src/Google.Protobuf \
-    --csharp_opt=base_namespace=Google.Protobuf \
+    --csharp_opt=base_namespace=Google.Protobuf,disable_buffer_serialization \
     src/google/protobuf/descriptor.proto \
     src/google/protobuf/any.proto \
     src/google/protobuf/api.proto \
@@ -46,6 +46,7 @@ $PROTOC -Isrc --csharp_out=csharp/src/Google.Protobuf \
 # of protoc.
 $PROTOC -Isrc -Icsharp/protos \
     --csharp_out=csharp/src/Google.Protobuf.Test/TestProtos \
+    --csharp_opt=disable_buffer_serialization \
     --descriptor_set_out=csharp/src/Google.Protobuf.Test/testprotos.pb \
     --include_source_info \
     --include_imports \
@@ -64,19 +65,21 @@ $PROTOC -Isrc -Icsharp/protos \
 
 # AddressBook sample protos
 $PROTOC -Iexamples -Isrc --csharp_out=csharp/src/AddressBook \
+    --csharp_opt=disable_buffer_serialization \
     examples/addressbook.proto
 
 $PROTOC -Iconformance -Isrc --csharp_out=csharp/src/Google.Protobuf.Conformance \
+    --csharp_opt=disable_buffer_serialization \
     conformance/conformance.proto
 
 # Benchmark protos
 $PROTOC -Ibenchmarks \
   benchmarks/datasets/google_message1/proto3/*.proto \
   benchmarks/benchmarks.proto \
-  --csharp_opt=support_span \
   --csharp_out=csharp/src/Google.Protobuf.Benchmarks
 
 # C# only benchmark protos
 $PROTOC -Isrc -Icsharp/src/Google.Protobuf.Benchmarks \
   csharp/src/Google.Protobuf.Benchmarks/*.proto \
+  --csharp_opt=disable_buffer_serialization \
   --csharp_out=csharp/src/Google.Protobuf.Benchmarks
