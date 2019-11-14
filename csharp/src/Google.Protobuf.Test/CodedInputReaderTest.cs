@@ -370,6 +370,14 @@ namespace Google.Protobuf
             Assert.AreEqual(value, input.ReadEnum());
             Assert.IsTrue(input.IsAtEnd);
         }
+
+        protected override void AssertReadFloat(byte[] data, float value)
+        {
+            CodedInputReader input = new CodedInputReader(new ReadOnlySequence<byte>(data));
+
+            Assert.AreEqual(value, input.ReadFloat());
+            Assert.IsTrue(input.IsAtEnd);
+        }
     }
 }
 #endif

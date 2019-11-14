@@ -572,6 +572,14 @@ namespace Google.Protobuf
             input.ReadTag();
         }
 
+        protected override void AssertReadFloat(byte[] data, float value)
+        {
+            CodedInputStream input = new CodedInputStream(data);
+
+            Assert.AreEqual(value, input.ReadFloat());
+            Assert.IsTrue(input.IsAtEnd);
+        }
+
         /// <summary>
         /// A MemoryStream that repeats a byte arrays' content a number of times.
         /// Simulates really large input without consuming loads of memory. Used above

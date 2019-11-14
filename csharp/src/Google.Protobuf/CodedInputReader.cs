@@ -280,13 +280,33 @@ namespace Google.Protobuf
         /// <summary>
         /// Reads a float field from the stream.
         /// </summary>
-        public unsafe float ReadFloat()
+        public float ReadFloat()
         {
-            byte* buffer = stackalloc byte[sizeof(float)];
-            Span<byte> tempSpan = new Span<byte>(buffer, sizeof(float));
+            const int length = sizeof(float);
+
+            if (reader.CurrentSpan.Length - reader.CurrentSpanIndex >= length)
+            {
+                // Fast path. All data is in the current span.
+                ReadOnlySpan<byte> data = reader.CurrentSpan.Slice(reader.CurrentSpanIndex, length);
+                reader.Advance(length);
+
+                return Unsafe.ReadUnaligned<float>(ref MemoryMarshal.GetReference(data));
+            }
+            else
+            {
+                return ReadFloatSlow();
+            }
+        }
+
+        private unsafe float ReadFloatSlow()
+        {
+            const int length = sizeof(float);
+
+            byte* buffer = stackalloc byte[length];
+            Span<byte> tempSpan = new Span<byte>(buffer, length);
 
             ThrowEndOfInputUnless(reader.TryCopyTo(tempSpan));
-            reader.Advance(sizeof(float));
+            reader.Advance(length);
 
             return Unsafe.ReadUnaligned<float>(ref MemoryMarshal.GetReference(tempSpan));
         }
@@ -658,13 +678,33 @@ namespace Google.Protobuf
         /// <summary>
         /// Reads a 32-bit little-endian integer from the stream.
         /// </summary>
-        internal unsafe uint ReadRawLittleEndian32()
+        internal uint ReadRawLittleEndian32()
         {
-            byte* buffer = stackalloc byte[4];
-            Span<byte> tempSpan = new Span<byte>(buffer, 4);
+            const int length = 4;
+
+            if (reader.CurrentSpan.Length - reader.CurrentSpanIndex >= length)
+            {
+                // Fast path. All data is in the current span.
+                ReadOnlySpan<byte> data = reader.CurrentSpan.Slice(reader.CurrentSpanIndex, length);
+                reader.Advance(length);
+
+                return BinaryPrimitives.ReadUInt32LittleEndian(data);
+            }
+            else
+            {
+                return ReadRawLittleEndian32Slow();
+            }
+        }
+
+        private unsafe uint ReadRawLittleEndian32Slow()
+        {
+            const int length = 4;
+
+            byte* buffer = stackalloc byte[length];
+            Span<byte> tempSpan = new Span<byte>(buffer, length);
 
             ThrowEndOfInputUnless(reader.TryCopyTo(tempSpan));
-            reader.Advance(4);
+            reader.Advance(length);
 
             return BinaryPrimitives.ReadUInt32LittleEndian(tempSpan);
         }
@@ -674,15 +714,35 @@ namespace Google.Protobuf
         /// </summary>
         internal unsafe ulong ReadRawLittleEndian64()
         {
-            byte* buffer = stackalloc byte[8];
-            Span<byte> tempSpan = new Span<byte>(buffer, 8);
+            const int length = 8;
+
+            if (reader.CurrentSpan.Length - reader.CurrentSpanIndex >= length)
+            {
+                // Fast path. All data is in the current span.
+                ReadOnlySpan<byte> data = reader.CurrentSpan.Slice(reader.CurrentSpanIndex, length);
+                reader.Advance(length);
+
+                return BinaryPrimitives.ReadUInt64LittleEndian(data);
+            }
+            else
+            {
+                return ReadRawLittleEndian32Slow();
+            }
+        }
+
+        private unsafe ulong ReadRawLittleEndian64Slow()
+        {
+            const int length = 8;
+
+            byte* buffer = stackalloc byte[length];
+            Span<byte> tempSpan = new Span<byte>(buffer, length);
 
             ThrowEndOfInputUnless(reader.TryCopyTo(tempSpan));
-            reader.Advance(8);
+            reader.Advance(length);
 
             return BinaryPrimitives.ReadUInt64LittleEndian(tempSpan);
         }
-#endregion
+        #endregion
 
         /// <summary>
         /// Sets currentLimit to (current position) + byteLimit. This is called

@@ -84,6 +84,8 @@ namespace Google.Protobuf
 
         protected abstract void ReadTag(byte[] data);
 
+        protected abstract void AssertReadFloat(byte[] data, float value);
+
         [Test]
         public void ReadLittleEndian()
         {
@@ -188,6 +190,15 @@ namespace Google.Protobuf
             Assert.AreEqual(unchecked((long)0xFFFFFFFF80000000L), CodedInputStream.DecodeZigZag64(0x00000000FFFFFFFFL));
             Assert.AreEqual(0x7FFFFFFFFFFFFFFFL, CodedInputStream.DecodeZigZag64(0xFFFFFFFFFFFFFFFEL));
             Assert.AreEqual(unchecked((long)0x8000000000000000L), CodedInputStream.DecodeZigZag64(0xFFFFFFFFFFFFFFFFL));
+        }
+
+        [Test]
+        public void ReadFloat()
+        {
+            AssertReadFloat(new byte[] { 0, 0, 0, 0 }, 0f);
+            AssertReadFloat(new byte[] { 205, 204, 140, 63 }, 1.1f);
+            AssertReadFloat(new byte[] { 255, 255, 127, 127 }, float.MaxValue);
+            AssertReadFloat(new byte[] { 255, 255, 127, 255 }, float.MinValue);
         }
     }
 }
