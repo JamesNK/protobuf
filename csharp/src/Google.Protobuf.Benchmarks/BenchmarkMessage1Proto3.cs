@@ -64,9 +64,9 @@ namespace Benchmarks.Proto3 {
 
   }
   #region Messages
-  public sealed partial class GoogleMessage1 : pb::IMessage<GoogleMessage1>,
+  public sealed partial class GoogleMessage1 : pb::IMessage<GoogleMessage1>
   #if !PROTOBUF_DISABLE_BUFFER_SERIALIZATION
-  pb::IBufferMessage
+  , pb::IBufferMessage
   #endif
    {
     private static readonly pb::MessageParser<GoogleMessage1> _parser = new pb::MessageParser<GoogleMessage1>(() => new GoogleMessage1());
@@ -1670,9 +1670,9 @@ namespace Benchmarks.Proto3 {
 
   }
 
-  public sealed partial class GoogleMessage1SubMessage : pb::IMessage<GoogleMessage1SubMessage>,
+  public sealed partial class GoogleMessage1SubMessage : pb::IMessage<GoogleMessage1SubMessage>
   #if !PROTOBUF_DISABLE_BUFFER_SERIALIZATION
-  pb::IBufferMessage
+  , pb::IBufferMessage
   #endif
    {
     private static readonly pb::MessageParser<GoogleMessage1SubMessage> _parser = new pb::MessageParser<GoogleMessage1SubMessage>(() => new GoogleMessage1SubMessage());

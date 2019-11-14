@@ -38,9 +38,9 @@ namespace Benchmarks {
 
   }
   #region Messages
-  public sealed partial class BenchmarkDataset : pb::IMessage<BenchmarkDataset>,
+  public sealed partial class BenchmarkDataset : pb::IMessage<BenchmarkDataset>
   #if !PROTOBUF_DISABLE_BUFFER_SERIALIZATION
-  pb::IBufferMessage
+  , pb::IBufferMessage
   #endif
    {
     private static readonly pb::MessageParser<BenchmarkDataset> _parser = new pb::MessageParser<BenchmarkDataset>(() => new BenchmarkDataset());

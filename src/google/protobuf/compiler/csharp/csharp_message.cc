@@ -136,9 +136,9 @@ void MessageGenerator::Generate(io::Printer* printer) {
   if (this->options()->use_buffer_serialization)
   {
     printer->Print(
-      ",\n"
+      "\n"
       "#if !PROTOBUF_DISABLE_BUFFER_SERIALIZATION\n"
-      "pb::IBufferMessage\n"
+      ", pb::IBufferMessage\n"
       "#endif\n");
   }
 
@@ -581,9 +581,16 @@ void MessageGenerator::GenerateWriteToOutputMethod(io::Printer* printer, bool us
   if (has_extension_ranges_) {
     // Serialize extensions
     printer->Print(
-      "if (_extensions != null) {\n"
-      "  _extensions.WriteTo(output);\n"
-      "}\n");
+      "if (_extensions != null) {\n");
+    if (use_buffer_serialization) {
+      printer->Print(
+      "  _extensions.WriteTo(ref output);\n");
+    } else {
+      printer->Print(
+      "  _extensions.WriteTo(output);\n");
+    }
+    printer->Print(
+        "}\n");
   }
 
   // Serialize unknown fields
@@ -695,9 +702,17 @@ void MessageGenerator::GenerateMergeFromInput(io::Printer* printer, bool use_buf
   }
   if (has_extension_ranges_) {
     printer->Print(
-      "default:\n"
+      "default:\n");
+    if (use_buffer_serialization) {
+      printer->Print(
+      "  if (!pb::ExtensionSet.TryMergeFieldFrom(ref _extensions, ref input)) {\n"
+      "    _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);\n");
+    } else {
+      printer->Print(
       "  if (!pb::ExtensionSet.TryMergeFieldFrom(ref _extensions, input)) {\n"
-      "    _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);\n"
+      "    _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);\n");
+    }
+    printer->Print(
       "  }\n"
       "  break;\n");
   } else {
