@@ -78,30 +78,28 @@ void RepeatedPrimitiveFieldGenerator::GenerateMergingCode(io::Printer* printer) 
     "$name$_.Add(other.$name$_);\n");
 }
 
-void RepeatedPrimitiveFieldGenerator::GenerateParsingCode(io::Printer* printer, bool use_buffer_serialization) {
-  if (use_buffer_serialization)
-  {
-    printer->Print(
-      variables_,
-      "$name$_.AddEntriesFrom(ref input, _repeated_$name$_codec);\n");
-  } else {
-    printer->Print(
-      variables_,
-      "$name$_.AddEntriesFrom(input, _repeated_$name$_codec);\n");
-  }
+void RepeatedPrimitiveFieldGenerator::GenerateParsingCode(io::Printer* printer) {
+  printer->Print(
+    variables_,
+    "$name$_.AddEntriesFrom(input, _repeated_$name$_codec);\n");
 }
 
-void RepeatedPrimitiveFieldGenerator::GenerateSerializationCode(io::Printer* printer, bool use_buffer_serialization) {
-  if (use_buffer_serialization)
-  {
-    printer->Print(
-      variables_,
-      "$name$_.WriteTo(ref output, _repeated_$name$_codec);\n");
-  } else {
-    printer->Print(
-      variables_,
-      "$name$_.WriteTo(output, _repeated_$name$_codec);\n");
-  }
+void RepeatedPrimitiveFieldGenerator::GenerateBufferParsingCode(io::Printer* printer) {
+  printer->Print(
+    variables_,
+    "$name$_.AddEntriesFrom(ref input, _repeated_$name$_codec);\n");
+}
+
+void RepeatedPrimitiveFieldGenerator::GenerateSerializationCode(io::Printer* printer) {
+  printer->Print(
+    variables_,
+    "$name$_.WriteTo(output, _repeated_$name$_codec);\n");
+}
+
+void RepeatedPrimitiveFieldGenerator::GenerateBufferSerializationCode(io::Printer* printer) {
+  printer->Print(
+    variables_,
+    "$name$_.WriteTo(ref output, _repeated_$name$_codec);\n");
 }
 
 void RepeatedPrimitiveFieldGenerator::GenerateSerializedSizeCode(io::Printer* printer) {

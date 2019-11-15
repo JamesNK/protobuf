@@ -575,7 +575,11 @@ void MessageGenerator::GenerateWriteToOutputMethod(io::Printer* printer, bool us
   for (int i = 0; i < fields_by_number().size(); i++) {
     std::unique_ptr<FieldGeneratorBase> generator(
       CreateFieldGeneratorInternal(fields_by_number()[i]));
-    generator->GenerateSerializationCode(printer, use_buffer_serialization);
+    if (use_buffer_serialization) {
+      generator->GenerateBufferSerializationCode(printer);
+    } else {
+      generator->GenerateSerializationCode(printer);
+    }
   }
 
   if (has_extension_ranges_) {
@@ -752,7 +756,11 @@ void MessageGenerator::GenerateMergeFromInput(io::Printer* printer, bool use_buf
     printer->Indent();
     std::unique_ptr<FieldGeneratorBase> generator(
         CreateFieldGeneratorInternal(field));
-    generator->GenerateParsingCode(printer, use_buffer_serialization);
+    if (use_buffer_serialization) {
+      generator->GenerateBufferParsingCode(printer);
+    } else {
+      generator->GenerateParsingCode(printer);
+    }
     printer->Print("break;\n");
     printer->Outdent();
     printer->Print("}\n");
