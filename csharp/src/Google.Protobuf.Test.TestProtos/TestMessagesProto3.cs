@@ -2960,31 +2960,31 @@ namespace ProtobufTestMessages.Proto3 {
         output.WriteEnum((int) OneofEnum);
       }
       if (optionalBoolWrapper_ != null) {
-        _single_optionalBoolWrapper_codec.WriteTagAndValue(output, OptionalBoolWrapper);
+        _single_optionalBoolWrapper_codec.WriteTagAndValue(ref output, OptionalBoolWrapper);
       }
       if (optionalInt32Wrapper_ != null) {
-        _single_optionalInt32Wrapper_codec.WriteTagAndValue(output, OptionalInt32Wrapper);
+        _single_optionalInt32Wrapper_codec.WriteTagAndValue(ref output, OptionalInt32Wrapper);
       }
       if (optionalInt64Wrapper_ != null) {
-        _single_optionalInt64Wrapper_codec.WriteTagAndValue(output, OptionalInt64Wrapper);
+        _single_optionalInt64Wrapper_codec.WriteTagAndValue(ref output, OptionalInt64Wrapper);
       }
       if (optionalUint32Wrapper_ != null) {
-        _single_optionalUint32Wrapper_codec.WriteTagAndValue(output, OptionalUint32Wrapper);
+        _single_optionalUint32Wrapper_codec.WriteTagAndValue(ref output, OptionalUint32Wrapper);
       }
       if (optionalUint64Wrapper_ != null) {
-        _single_optionalUint64Wrapper_codec.WriteTagAndValue(output, OptionalUint64Wrapper);
+        _single_optionalUint64Wrapper_codec.WriteTagAndValue(ref output, OptionalUint64Wrapper);
       }
       if (optionalFloatWrapper_ != null) {
-        _single_optionalFloatWrapper_codec.WriteTagAndValue(output, OptionalFloatWrapper);
+        _single_optionalFloatWrapper_codec.WriteTagAndValue(ref output, OptionalFloatWrapper);
       }
       if (optionalDoubleWrapper_ != null) {
-        _single_optionalDoubleWrapper_codec.WriteTagAndValue(output, OptionalDoubleWrapper);
+        _single_optionalDoubleWrapper_codec.WriteTagAndValue(ref output, OptionalDoubleWrapper);
       }
       if (optionalStringWrapper_ != null) {
-        _single_optionalStringWrapper_codec.WriteTagAndValue(output, OptionalStringWrapper);
+        _single_optionalStringWrapper_codec.WriteTagAndValue(ref output, OptionalStringWrapper);
       }
       if (optionalBytesWrapper_ != null) {
-        _single_optionalBytesWrapper_codec.WriteTagAndValue(output, OptionalBytesWrapper);
+        _single_optionalBytesWrapper_codec.WriteTagAndValue(ref output, OptionalBytesWrapper);
       }
       repeatedBoolWrapper_.WriteTo(ref output, _repeated_repeatedBoolWrapper_codec);
       repeatedInt32Wrapper_.WriteTo(ref output, _repeated_repeatedInt32Wrapper_codec);
@@ -4910,63 +4910,63 @@ namespace ProtobufTestMessages.Proto3 {
             break;
           }
           case 1610: {
-            bool? value = _single_optionalBoolWrapper_codec.Read(input);
+            bool? value = _single_optionalBoolWrapper_codec.Read(ref input);
             if (optionalBoolWrapper_ == null || value != false) {
               OptionalBoolWrapper = value;
             }
             break;
           }
           case 1618: {
-            int? value = _single_optionalInt32Wrapper_codec.Read(input);
+            int? value = _single_optionalInt32Wrapper_codec.Read(ref input);
             if (optionalInt32Wrapper_ == null || value != 0) {
               OptionalInt32Wrapper = value;
             }
             break;
           }
           case 1626: {
-            long? value = _single_optionalInt64Wrapper_codec.Read(input);
+            long? value = _single_optionalInt64Wrapper_codec.Read(ref input);
             if (optionalInt64Wrapper_ == null || value != 0L) {
               OptionalInt64Wrapper = value;
             }
             break;
           }
           case 1634: {
-            uint? value = _single_optionalUint32Wrapper_codec.Read(input);
+            uint? value = _single_optionalUint32Wrapper_codec.Read(ref input);
             if (optionalUint32Wrapper_ == null || value != 0) {
               OptionalUint32Wrapper = value;
             }
             break;
           }
           case 1642: {
-            ulong? value = _single_optionalUint64Wrapper_codec.Read(input);
+            ulong? value = _single_optionalUint64Wrapper_codec.Read(ref input);
             if (optionalUint64Wrapper_ == null || value != 0UL) {
               OptionalUint64Wrapper = value;
             }
             break;
           }
           case 1650: {
-            float? value = _single_optionalFloatWrapper_codec.Read(input);
+            float? value = _single_optionalFloatWrapper_codec.Read(ref input);
             if (optionalFloatWrapper_ == null || value != 0F) {
               OptionalFloatWrapper = value;
             }
             break;
           }
           case 1658: {
-            double? value = _single_optionalDoubleWrapper_codec.Read(input);
+            double? value = _single_optionalDoubleWrapper_codec.Read(ref input);
             if (optionalDoubleWrapper_ == null || value != 0D) {
               OptionalDoubleWrapper = value;
             }
             break;
           }
           case 1666: {
-            string value = _single_optionalStringWrapper_codec.Read(input);
+            string value = _single_optionalStringWrapper_codec.Read(ref input);
             if (optionalStringWrapper_ == null || value != "") {
               OptionalStringWrapper = value;
             }
             break;
           }
           case 1674: {
-            pb::ByteString value = _single_optionalBytesWrapper_codec.Read(input);
+            pb::ByteString value = _single_optionalBytesWrapper_codec.Read(ref input);
             if (optionalBytesWrapper_ == null || value != pb::ByteString.Empty) {
               OptionalBytesWrapper = value;
             }

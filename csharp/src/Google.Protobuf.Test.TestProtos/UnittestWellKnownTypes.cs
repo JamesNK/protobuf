@@ -648,31 +648,31 @@ namespace Google.Protobuf.TestProtos {
         output.WriteMessage(TypeField);
       }
       if (doubleField_ != null) {
-        _single_doubleField_codec.WriteTagAndValue(output, DoubleField);
+        _single_doubleField_codec.WriteTagAndValue(ref output, DoubleField);
       }
       if (floatField_ != null) {
-        _single_floatField_codec.WriteTagAndValue(output, FloatField);
+        _single_floatField_codec.WriteTagAndValue(ref output, FloatField);
       }
       if (int64Field_ != null) {
-        _single_int64Field_codec.WriteTagAndValue(output, Int64Field);
+        _single_int64Field_codec.WriteTagAndValue(ref output, Int64Field);
       }
       if (uint64Field_ != null) {
-        _single_uint64Field_codec.WriteTagAndValue(output, Uint64Field);
+        _single_uint64Field_codec.WriteTagAndValue(ref output, Uint64Field);
       }
       if (int32Field_ != null) {
-        _single_int32Field_codec.WriteTagAndValue(output, Int32Field);
+        _single_int32Field_codec.WriteTagAndValue(ref output, Int32Field);
       }
       if (uint32Field_ != null) {
-        _single_uint32Field_codec.WriteTagAndValue(output, Uint32Field);
+        _single_uint32Field_codec.WriteTagAndValue(ref output, Uint32Field);
       }
       if (boolField_ != null) {
-        _single_boolField_codec.WriteTagAndValue(output, BoolField);
+        _single_boolField_codec.WriteTagAndValue(ref output, BoolField);
       }
       if (stringField_ != null) {
-        _single_stringField_codec.WriteTagAndValue(output, StringField);
+        _single_stringField_codec.WriteTagAndValue(ref output, StringField);
       }
       if (bytesField_ != null) {
-        _single_bytesField_codec.WriteTagAndValue(output, BytesField);
+        _single_bytesField_codec.WriteTagAndValue(ref output, BytesField);
       }
       if (valueField_ != null) {
         output.WriteRawTag(154, 1);
@@ -1082,63 +1082,63 @@ namespace Google.Protobuf.TestProtos {
             break;
           }
           case 82: {
-            double? value = _single_doubleField_codec.Read(input);
+            double? value = _single_doubleField_codec.Read(ref input);
             if (doubleField_ == null || value != 0D) {
               DoubleField = value;
             }
             break;
           }
           case 90: {
-            float? value = _single_floatField_codec.Read(input);
+            float? value = _single_floatField_codec.Read(ref input);
             if (floatField_ == null || value != 0F) {
               FloatField = value;
             }
             break;
           }
           case 98: {
-            long? value = _single_int64Field_codec.Read(input);
+            long? value = _single_int64Field_codec.Read(ref input);
             if (int64Field_ == null || value != 0L) {
               Int64Field = value;
             }
             break;
           }
           case 106: {
-            ulong? value = _single_uint64Field_codec.Read(input);
+            ulong? value = _single_uint64Field_codec.Read(ref input);
             if (uint64Field_ == null || value != 0UL) {
               Uint64Field = value;
             }
             break;
           }
           case 114: {
-            int? value = _single_int32Field_codec.Read(input);
+            int? value = _single_int32Field_codec.Read(ref input);
             if (int32Field_ == null || value != 0) {
               Int32Field = value;
             }
             break;
           }
           case 122: {
-            uint? value = _single_uint32Field_codec.Read(input);
+            uint? value = _single_uint32Field_codec.Read(ref input);
             if (uint32Field_ == null || value != 0) {
               Uint32Field = value;
             }
             break;
           }
           case 130: {
-            bool? value = _single_boolField_codec.Read(input);
+            bool? value = _single_boolField_codec.Read(ref input);
             if (boolField_ == null || value != false) {
               BoolField = value;
             }
             break;
           }
           case 138: {
-            string value = _single_stringField_codec.Read(input);
+            string value = _single_stringField_codec.Read(ref input);
             if (stringField_ == null || value != "") {
               StringField = value;
             }
             break;
           }
           case 146: {
-            pb::ByteString value = _single_bytesField_codec.Read(input);
+            pb::ByteString value = _single_bytesField_codec.Read(ref input);
             if (bytesField_ == null || value != pb::ByteString.Empty) {
               BytesField = value;
             }
@@ -2259,31 +2259,31 @@ namespace Google.Protobuf.TestProtos {
         output.WriteMessage(TypeField);
       }
       if (oneofFieldCase_ == OneofFieldOneofCase.DoubleField) {
-        _oneof_doubleField_codec.WriteTagAndValue(output, (double?) oneofField_);
+        _oneof_doubleField_codec.WriteTagAndValue(ref output, (double?) oneofField_);
       }
       if (oneofFieldCase_ == OneofFieldOneofCase.FloatField) {
-        _oneof_floatField_codec.WriteTagAndValue(output, (float?) oneofField_);
+        _oneof_floatField_codec.WriteTagAndValue(ref output, (float?) oneofField_);
       }
       if (oneofFieldCase_ == OneofFieldOneofCase.Int64Field) {
-        _oneof_int64Field_codec.WriteTagAndValue(output, (long?) oneofField_);
+        _oneof_int64Field_codec.WriteTagAndValue(ref output, (long?) oneofField_);
       }
       if (oneofFieldCase_ == OneofFieldOneofCase.Uint64Field) {
-        _oneof_uint64Field_codec.WriteTagAndValue(output, (ulong?) oneofField_);
+        _oneof_uint64Field_codec.WriteTagAndValue(ref output, (ulong?) oneofField_);
       }
       if (oneofFieldCase_ == OneofFieldOneofCase.Int32Field) {
-        _oneof_int32Field_codec.WriteTagAndValue(output, (int?) oneofField_);
+        _oneof_int32Field_codec.WriteTagAndValue(ref output, (int?) oneofField_);
       }
       if (oneofFieldCase_ == OneofFieldOneofCase.Uint32Field) {
-        _oneof_uint32Field_codec.WriteTagAndValue(output, (uint?) oneofField_);
+        _oneof_uint32Field_codec.WriteTagAndValue(ref output, (uint?) oneofField_);
       }
       if (oneofFieldCase_ == OneofFieldOneofCase.BoolField) {
-        _oneof_boolField_codec.WriteTagAndValue(output, (bool?) oneofField_);
+        _oneof_boolField_codec.WriteTagAndValue(ref output, (bool?) oneofField_);
       }
       if (oneofFieldCase_ == OneofFieldOneofCase.StringField) {
-        _oneof_stringField_codec.WriteTagAndValue(output, (string) oneofField_);
+        _oneof_stringField_codec.WriteTagAndValue(ref output, (string) oneofField_);
       }
       if (oneofFieldCase_ == OneofFieldOneofCase.BytesField) {
-        _oneof_bytesField_codec.WriteTagAndValue(output, (pb::ByteString) oneofField_);
+        _oneof_bytesField_codec.WriteTagAndValue(ref output, (pb::ByteString) oneofField_);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
@@ -2667,39 +2667,39 @@ namespace Google.Protobuf.TestProtos {
             break;
           }
           case 82: {
-            DoubleField = _oneof_doubleField_codec.Read(input);
+            DoubleField = _oneof_doubleField_codec.Read(ref input);
             break;
           }
           case 90: {
-            FloatField = _oneof_floatField_codec.Read(input);
+            FloatField = _oneof_floatField_codec.Read(ref input);
             break;
           }
           case 98: {
-            Int64Field = _oneof_int64Field_codec.Read(input);
+            Int64Field = _oneof_int64Field_codec.Read(ref input);
             break;
           }
           case 106: {
-            Uint64Field = _oneof_uint64Field_codec.Read(input);
+            Uint64Field = _oneof_uint64Field_codec.Read(ref input);
             break;
           }
           case 114: {
-            Int32Field = _oneof_int32Field_codec.Read(input);
+            Int32Field = _oneof_int32Field_codec.Read(ref input);
             break;
           }
           case 122: {
-            Uint32Field = _oneof_uint32Field_codec.Read(input);
+            Uint32Field = _oneof_uint32Field_codec.Read(ref input);
             break;
           }
           case 130: {
-            BoolField = _oneof_boolField_codec.Read(input);
+            BoolField = _oneof_boolField_codec.Read(ref input);
             break;
           }
           case 138: {
-            StringField = _oneof_stringField_codec.Read(input);
+            StringField = _oneof_stringField_codec.Read(ref input);
             break;
           }
           case 146: {
-            BytesField = _oneof_bytesField_codec.Read(input);
+            BytesField = _oneof_bytesField_codec.Read(ref input);
             break;
           }
         }
