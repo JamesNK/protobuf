@@ -43,7 +43,7 @@ namespace Google.Protobuf.Benchmarks
         public static void Main(string[] args)
         {
 #if true
-            BenchmarkRunner.Run<JamesBenchmarks>();
+            BenchmarkRunner.Run<WrapperBenchmark>();
 #else
             var b = new JamesBenchmarks();
             b.MessageSize = MessageSize.Small;

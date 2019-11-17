@@ -61,6 +61,7 @@ namespace Google.Protobuf
             currentLimit = long.MaxValue;
             decoder = null;
             DiscardUnknownFields = false;
+            ExtensionRegistry = null;
         }
 
         public ReadOnlySequence<byte> Sequence => reader.Sequence;
@@ -80,7 +81,12 @@ namespace Google.Protobuf
         /// </summary>
         internal bool DiscardUnknownFields { get; set; }
 
-#region Reading of tags etc
+        /// <summary>
+        /// Internal-only property; provides extension identifiers to compatible messages while parsing.
+        /// </summary>
+        internal ExtensionRegistry ExtensionRegistry { get; set; }
+
+        #region Reading of tags etc
 
         /// <summary>
         /// Peeks at the next field tag. This is like calling <see cref="ReadTag"/>, but the

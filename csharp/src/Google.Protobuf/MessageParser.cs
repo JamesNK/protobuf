@@ -161,6 +161,21 @@ namespace Google.Protobuf
             return message;
         }
 
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
+        /// <summary>
+        /// Parses a message from the given coded input stream.
+        /// </summary>
+        /// <param name="input">The stream to parse.</param>
+        /// <returns>The parsed message.</returns>
+        public IMessage ParseFrom(ref CodedInputReader input)
+        {
+            IMessage message = factory();
+            MergeFrom(message, ref input);
+            CheckMergedRequiredFields(message);
+            return message;
+        }
+#endif
+
         // TODO: When we're using a C# 7.1 compiler, make this private protected.
         internal void MergeFrom(IMessage message, CodedInputStream codedInput)
         {
@@ -175,6 +190,29 @@ namespace Google.Protobuf
                 codedInput.DiscardUnknownFields = originalDiscard;
             }
         }
+
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
+        // TODO: When we're using a C# 7.1 compiler, make this private protected.
+        internal void MergeFrom(IMessage message, ref CodedInputReader codedInput)
+        {
+            IBufferMessage bufferMessage = message as IBufferMessage;
+            if (bufferMessage == null)
+            {
+                throw new InvalidOperationException("Message does not support CodedInputReader.");
+            }
+
+            bool originalDiscard = codedInput.DiscardUnknownFields;
+            try
+            {
+                codedInput.DiscardUnknownFields = DiscardUnknownFields;
+                bufferMessage.MergeFrom(ref codedInput);
+            }
+            finally
+            {
+                codedInput.DiscardUnknownFields = originalDiscard;
+            }
+        }
+#endif
 
         internal static void CheckMergedRequiredFields(IMessage message)
         {
@@ -326,6 +364,20 @@ namespace Google.Protobuf
             MergeFrom(message, input);
             return message;
         }
+
+#if GOOGLE_PROTOBUF_SUPPORT_SPAN
+        /// <summary>
+        /// Parses a message from the given coded input stream.
+        /// </summary>
+        /// <param name="input">The stream to parse.</param>
+        /// <returns>The parsed message.</returns>
+        public new T ParseFrom(ref CodedInputReader input)
+        {
+            T message = factory();
+            MergeFrom(message, ref input);
+            return message;
+        }
+#endif
 
         /// <summary>
         /// Parses a message from the given JSON.
