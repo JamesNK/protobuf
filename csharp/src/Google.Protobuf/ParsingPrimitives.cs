@@ -112,20 +112,52 @@ namespace Google.Protobuf
         public static ulong ParseRawVarint64_ParseContextWithPosition(ref ParseContextWithPosition context)
         {
             var current = context.Buffer;
+            var position = context.Position;
 
-            ulong result = current[context.Position++];
+            ulong result = current[position++];
             if (result < 128)
             {
+                context.Position = position;
                 return result;
             }
             result &= 0x7f;
             int shift = 7;
             do
             {
-                byte b = current[context.Position++];
+                byte b = current[position++];
                 result |= (ulong)(b & 0x7F) << shift;
                 if (b < 0x80)
                 {
+                    context.Position = position;
+                    return result;
+                }
+                shift += 7;
+            }
+            while (shift < 64);
+
+            throw InvalidProtocolBufferException.MalformedVarint();
+        }
+
+        public static ulong ParseRawVarint64_ArrayParseContextWithPosition(ArrayParseContextWithPosition context)
+        {
+            var current = context.Buffer;
+            var position = context.Position;
+
+            ulong result = current[position++];
+            if (result < 128)
+            {
+                context.Position = position;
+                return result;
+            }
+            result &= 0x7f;
+            int shift = 7;
+            do
+            {
+                byte b = current[position++];
+                result |= (ulong)(b & 0x7F) << shift;
+                if (b < 0x80)
+                {
+                    context.Position = position;
                     return result;
                 }
                 shift += 7;
@@ -166,6 +198,12 @@ namespace Google.Protobuf
     public ref struct ParseContextWithPosition
     {
         public Span<byte> Buffer;
+        public int Position;
+    }
+
+    public class ArrayParseContextWithPosition
+    {
+        public byte[] Buffer;
         public int Position;
     }
 }

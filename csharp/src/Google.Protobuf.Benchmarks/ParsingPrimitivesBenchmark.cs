@@ -52,7 +52,8 @@ namespace Google.Protobuf.Benchmarks
         const int IterationCount = 10000;
         byte[] manyPrimitiveFieldsByteArray;
         ReadOnlySequence<byte> manyPrimitiveFieldsReadOnlySequence;
-        
+        ArrayParseContextWithPosition context;
+
         [GlobalSetup]
         public void GlobalSetup()
         {
@@ -67,6 +68,8 @@ namespace Google.Protobuf.Benchmarks
 
             manyPrimitiveFieldsByteArray = memoryStream.ToArray();
             manyPrimitiveFieldsReadOnlySequence = new ReadOnlySequence<byte>(manyPrimitiveFieldsByteArray);
+
+            context = new ArrayParseContextWithPosition();
         }
 
         [Benchmark]
@@ -99,7 +102,6 @@ namespace Google.Protobuf.Benchmarks
         [Benchmark]
         public ulong ParseFromSpan_ParseContextWithPosition()
         {
-            SequenceReader<byte> reader = new SequenceReader<byte>(manyPrimitiveFieldsReadOnlySequence);
             ParseContextWithPosition context = new ParseContextWithPosition();
             context.Buffer = new Span<byte>(manyPrimitiveFieldsByteArray);
             context.Position = 0;
@@ -108,6 +110,21 @@ namespace Google.Protobuf.Benchmarks
             for (int i = 0; i < IterationCount; i++)
             {
                 ulong result = ParsingPrimitives.ParseRawVarint64_ParseContextWithPosition(ref context);
+                sum += result;
+            }
+            return sum;
+        }
+
+        [Benchmark]
+        public ulong ParseFromSpan_ArrayParseContextWithPosition()
+        {
+            context.Buffer = manyPrimitiveFieldsByteArray;
+            context.Position = 0;
+
+            ulong sum = 0;
+            for (int i = 0; i < IterationCount; i++)
+            {
+                ulong result = ParsingPrimitives.ParseRawVarint64_ArrayParseContextWithPosition(context);
                 sum += result;
             }
             return sum;
