@@ -33,13 +33,9 @@
 #if GOOGLE_PROTOBUF_SUPPORT_SYSTEM_MEMORY
 using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security;
-using System.Text;
-using System.Threading;
 
 namespace Google.Protobuf
 {
@@ -48,28 +44,27 @@ namespace Google.Protobuf
     /// https://github.com/dotnet/runtime/blob/071da4c41aa808c949a773b92dca6f88de9d11f3/src/libraries/System.Memory/src/System/Buffers/SequenceReader.cs
     /// </summary>
     [SecuritySafeCritical]
-    internal ref partial struct SequenceReader<T> where T : IEquatable<T>
+    internal ref partial struct LimitedSequenceReader<T> where T : IEquatable<T>
     {
         private SequencePosition _currentPosition;
         private SequencePosition _nextPosition;
         private bool _moreData;
-        private long _length;
+        private readonly int _length;
 
-        /// <summary>
-        /// Create a <see cref="SequenceReader{T}"/> over the given <see cref="ReadOnlySequence{T}"/>.
-        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public SequenceReader(ReadOnlySequence<T> sequence)
+        public LimitedSequenceReader(ReadOnlySequence<T> sequence)
         {
             CurrentSpanIndex = 0;
             Consumed = 0;
             Sequence = sequence;
             _currentPosition = sequence.Start;
-            _length = -1;
+            _length = (int)Sequence.Length;
+            CurrentLimit = _length;
 
             var first = sequence.First.Span;
             _nextPosition = sequence.GetPosition(first.Length);
             CurrentSpan = first;
+            CurrentLimitedSpan = first;
             _moreData = first.Length > 0;
 
             if (!_moreData && !sequence.IsSingleSegment)
@@ -89,16 +84,17 @@ namespace Google.Protobuf
         /// </summary>
         public ReadOnlySequence<T> Sequence { get; }
 
-        /// <summary>
-        /// The current position in the <see cref="Sequence"/>.
-        /// </summary>
-        public SequencePosition Position
-            => Sequence.GetPosition(CurrentSpanIndex, _currentPosition);
+        public SequencePosition Position => Sequence.GetPosition(CurrentSpanIndex, _currentPosition);
 
         /// <summary>
         /// The current segment in the <see cref="Sequence"/> as a span.
         /// </summary>
         public ReadOnlySpan<T> CurrentSpan { get; private set; }
+
+        /// <summary>
+        /// The current segment in the <see cref="Sequence"/> as a span.
+        /// </summary>
+        public ReadOnlySpan<T> CurrentLimitedSpan { get; private set; }
 
         /// <summary>
         /// The index in the <see cref="CurrentSpan"/>.
@@ -117,48 +113,19 @@ namespace Google.Protobuf
         /// <summary>
         /// The total number of <typeparamref name="T"/>'s processed by the reader.
         /// </summary>
-        public long Consumed { get; private set; }
+        public int Consumed { get; private set; }
 
         /// <summary>
         /// Remaining <typeparamref name="T"/>'s in the reader's <see cref="Sequence"/>.
         /// </summary>
-        public long Remaining => Length - Consumed;
+        public int Remaining => _length - Consumed;
 
-        /// <summary>
-        /// Count of <typeparamref name="T"/> in the reader's <see cref="Sequence"/>.
-        /// </summary>
-        public long Length
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                if (_length < 0)
-                {
-                    // Cache the length
-                    _length = Sequence.Length;
-                }
-                return _length;
-            }
-        }
+        public int CurrentLimit { get; private set; }
 
-        /// <summary>
-        /// Peeks at the next value without advancing the reader.
-        /// </summary>
-        /// <param name="value">The next value or default if at the end.</param>
-        /// <returns>False if at the end of the reader.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryPeek(out T value)
+        public void SetLimit(int newLimit)
         {
-            if (_moreData)
-            {
-                value = CurrentSpan[CurrentSpanIndex];
-                return true;
-            }
-            else
-            {
-                value = default;
-                return false;
-            }
+            CurrentLimit = newLimit;
+            CurrentLimitedSpan = CurrentSpan.Slice(0, Math.Min(CurrentLimit, CurrentSpan.Length));
         }
 
         /// <summary>
@@ -191,7 +158,7 @@ namespace Google.Protobuf
         /// Move the reader back the specified number of items.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Rewind(long count)
+        public void Rewind(int count)
         {
             if (count < 0)
             {
@@ -202,7 +169,7 @@ namespace Google.Protobuf
 
             if (CurrentSpanIndex >= count)
             {
-                CurrentSpanIndex -= (int)count;
+                CurrentSpanIndex -= count;
                 _moreData = true;
             }
             else
@@ -213,7 +180,7 @@ namespace Google.Protobuf
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private void RetreatToPreviousSpan(long consumed)
+        private void RetreatToPreviousSpan(int consumed)
         {
             ResetReader();
             Advance(consumed);
@@ -233,12 +200,14 @@ namespace Google.Protobuf
                 if (memory.Length == 0)
                 {
                     CurrentSpan = default;
+                    CurrentLimitedSpan = default;
                     // No data in the first span, move to one with data
                     GetNextSpan();
                 }
                 else
                 {
                     CurrentSpan = memory.Span;
+                    CurrentLimitedSpan = CurrentSpan.Slice(0, Math.Min(CurrentLimit, CurrentSpan.Length));
                 }
             }
             else
@@ -246,6 +215,7 @@ namespace Google.Protobuf
                 // No data in any spans and at end of sequence
                 _moreData = false;
                 CurrentSpan = default;
+                CurrentLimitedSpan = default;
             }
         }
 
@@ -263,12 +233,14 @@ namespace Google.Protobuf
                     if (memory.Length > 0)
                     {
                         CurrentSpan = memory.Span;
+                        CurrentLimitedSpan = CurrentSpan.Slice(0, Math.Min(CurrentLimit, CurrentSpan.Length));
                         CurrentSpanIndex = 0;
                         return;
                     }
                     else
                     {
                         CurrentSpan = default;
+                        CurrentLimitedSpan = default;
                         CurrentSpanIndex = 0;
                         previousNextPosition = _nextPosition;
                     }
@@ -281,12 +253,11 @@ namespace Google.Protobuf
         /// Move the reader ahead the specified number of items.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Advance(long count)
+        public void Advance(int count)
         {
-            const long TooBigOrNegative = unchecked((long)0xFFFFFFFF80000000);
-            if ((count & TooBigOrNegative) == 0 && CurrentSpan.Length - CurrentSpanIndex > (int)count)
+            if (CurrentSpan.Length - CurrentSpanIndex > count)
             {
-                CurrentSpanIndex += (int)count;
+                CurrentSpanIndex += count;
                 Consumed += count;
             }
             else
@@ -300,14 +271,16 @@ namespace Google.Protobuf
         /// Unchecked helper to avoid unnecessary checks where you know count is valid.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void AdvanceCurrentSpan(long count)
+        internal void AdvanceCurrentSpan(int count)
         {
             Debug.Assert(count >= 0);
 
             Consumed += count;
-            CurrentSpanIndex += (int)count;
+            CurrentSpanIndex += count;
             if (CurrentSpanIndex >= CurrentSpan.Length)
+            {
                 GetNextSpan();
+            }
         }
 
         /// <summary>
@@ -315,23 +288,18 @@ namespace Google.Protobuf
         /// with valid count and there is no need to fetch the next one.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void AdvanceWithinSpan(long count)
+        internal void AdvanceWithinSpan(int count)
         {
             Debug.Assert(count >= 0);
 
             Consumed += count;
-            CurrentSpanIndex += (int)count;
+            CurrentSpanIndex += count;
 
             Debug.Assert(CurrentSpanIndex < CurrentSpan.Length);
         }
 
-        private void AdvanceToNextSpan(long count)
+        private void AdvanceToNextSpan(int count)
         {
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-
             Consumed += count;
             while (_moreData)
             {
@@ -339,7 +307,7 @@ namespace Google.Protobuf
 
                 if (remaining > count)
                 {
-                    CurrentSpanIndex += (int)count;
+                    CurrentSpanIndex += count;
                     count = 0;
                     break;
                 }
@@ -366,11 +334,6 @@ namespace Google.Protobuf
             }
         }
 
-        /// <summary>
-        /// Copies data from the current <see cref="Position"/> to the given <paramref name="destination"/> span.
-        /// </summary>
-        /// <param name="destination">Destination to copy to.</param>
-        /// <returns>True if there is enough data to copy to the <paramref name="destination"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryCopyTo(Span<T> destination)
         {
@@ -387,7 +350,9 @@ namespace Google.Protobuf
         internal bool TryCopyMultisegment(Span<T> destination)
         {
             if (Remaining < destination.Length)
+            {
                 return false;
+            }
 
             ReadOnlySpan<T> firstSpan = UnreadSpan;
             Debug.Assert(firstSpan.Length < destination.Length);

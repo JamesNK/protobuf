@@ -64,10 +64,9 @@ namespace Google.Protobuf
     {
         internal const int DefaultRecursionLimit = 100;
 
-        private SequenceReader<byte> reader;
+        private LimitedSequenceReader<byte> reader;
         private uint lastTag;
         private int recursionDepth;
-        private int currentLimit;
         private Decoder decoder;
 
         private readonly int recursionLimit;
@@ -82,11 +81,10 @@ namespace Google.Protobuf
 
         internal CodedInputReader(ReadOnlySequence<byte> input, int recursionLimit)
         {
-            this.reader = new SequenceReader<byte>(input);
+            this.reader = new LimitedSequenceReader<byte>(input);
             this.lastTag = 0;
             this.recursionDepth = 0;
             this.recursionLimit = recursionLimit;
-            this.currentLimit = (int)this.reader.Length;
             this.decoder = null;
             this.DiscardUnknownFields = false;
             this.ExtensionRegistry = null;
@@ -95,7 +93,7 @@ namespace Google.Protobuf
         /// <summary>
         /// The total number of bytes processed by the reader.
         /// </summary>
-        public long Position => reader.Consumed;
+        public int Position => reader.Consumed;
 
         /// <summary>
         /// Returns true if the reader has reached the end of the input. This is the
@@ -147,11 +145,11 @@ namespace Google.Protobuf
         public uint PeekTag()
         {
             uint previousTag = lastTag;
-            long consumed = reader.Consumed;
+            int consumed = reader.Consumed;
 
             uint tag = ReadTag();
 
-            long rewindCount = reader.Consumed - consumed;
+            int rewindCount = reader.Consumed - consumed;
             if (rewindCount > 0)
             {
                 reader.Rewind(rewindCount);
@@ -178,17 +176,11 @@ namespace Google.Protobuf
         /// <returns>The next field tag, or 0 for end of input. (0 is never a valid tag.)</returns>
         public uint ReadTag()
         {
-            if (ReachedLimit)
-            {
-                lastTag = 0;
-                return 0;
-            }
-
             // Optimize for common case of a 2 byte tag that is in the current span
-            var current = LimitedUnreadSpan;
-            if (current.Length >= 2)
+            var position = reader.CurrentSpanIndex;
+            if (position + 2 < reader.CurrentLimitedSpan.Length)
             {
-                int tmp = current[0];
+                int tmp = reader.CurrentLimitedSpan[position];
                 if (tmp < 128)
                 {
                     lastTag = (uint)tmp;
@@ -197,7 +189,7 @@ namespace Google.Protobuf
                 else
                 {
                     int result = tmp & 0x7f;
-                    if ((tmp = current[1]) < 128)
+                    if ((tmp = reader.CurrentLimitedSpan[position + 1]) < 128)
                     {
                         result |= tmp << 7;
                         lastTag = (uint)result;
@@ -212,7 +204,7 @@ namespace Google.Protobuf
             }
             else
             {
-                if (IsAtEnd)
+                if (ReachedLimit || IsAtEnd)
                 {
                     lastTag = 0;
                     return 0;
@@ -338,15 +330,16 @@ namespace Google.Protobuf
         {
             const int length = sizeof(float);
 
-            ReadOnlySpan<byte> current = LimitedUnreadSpan;
-            if (BitConverter.IsLittleEndian && current.Length >= length)
+            if (BitConverter.IsLittleEndian && reader.CurrentLimitedSpan.Length >= reader.CurrentSpanIndex + length)
             {
                 // Fast path. All data is in the current span and we're little endian architecture.
-                reader.Advance(length);
 
                 // ReadUnaligned uses processor architecture for endianness. Content is little endian and
                 // IsLittleEndian has been checked so this is safe to call.
-                return Unsafe.ReadUnaligned<float>(ref MemoryMarshal.GetReference(current));
+                float result = Unsafe.ReadUnaligned<float>(ref MemoryMarshal.GetReference(reader.CurrentLimitedSpan.Slice(reader.CurrentSpanIndex)));
+                reader.Advance(length);
+
+                return result;
             }
             else
             {
@@ -441,11 +434,10 @@ namespace Google.Protobuf
             }
 
 #if GOOGLE_PROTOBUF_SUPPORT_FAST_STRING
-            ReadOnlySpan<byte> unreadSpan = LimitedUnreadSpan;
-            if (unreadSpan.Length >= length)
+            if (reader.CurrentLimitedSpan.Length >= reader.CurrentSpanIndex + length)
             {
                 // Fast path: all bytes to decode appear in the same span.
-                ReadOnlySpan<byte> data = unreadSpan.Slice(0, length);
+                ReadOnlySpan<byte> data = reader.CurrentLimitedSpan.Slice(reader.CurrentSpanIndex, length);
 
                 string value;
                 unsafe
@@ -488,7 +480,7 @@ namespace Google.Protobuf
                 int initializedChars = 0;
                 while (remainingByteLength > 0)
                 {
-                    var unreadSpan = LimitedUnreadSpan;
+                    var unreadSpan = reader.CurrentLimitedSpan.Slice(reader.CurrentSpanIndex);
                     int bytesRead = Math.Min(remainingByteLength, unreadSpan.Length);
                     remainingByteLength -= bytesRead;
                     bool flush = remainingByteLength == 0;
@@ -571,9 +563,8 @@ namespace Google.Protobuf
             CheckRequestedDataAvailable(length);
 
             // Avoid creating a copy of Sequence if data is on current span
-            var unreadSpan = LimitedUnreadSpan;
-            var data = (unreadSpan.Length >= length)
-                ? unreadSpan.Slice(0, length).ToArray()
+            byte[] data = (reader.CurrentLimitedSpan.Length >= reader.CurrentSpanIndex + length)
+                ? reader.CurrentLimitedSpan.Slice(reader.CurrentSpanIndex, length).ToArray()
                 : reader.Sequence.Slice(reader.Position, length).ToArray();
 
             reader.Advance(length);
@@ -650,7 +641,7 @@ namespace Google.Protobuf
         public bool MaybeConsumeTag(uint tag)
         {
             uint previousTag = lastTag;
-            long consumed = reader.Consumed;
+            int consumed = reader.Consumed;
 
             uint newTag = ReadTag();
             if (newTag == tag)
@@ -660,7 +651,7 @@ namespace Google.Protobuf
             }
 
             // No match so rewind
-            long rewindCount = reader.Consumed - consumed;
+            int rewindCount = reader.Consumed - consumed;
             if (rewindCount > 0)
             {
                 reader.Rewind(rewindCount);
@@ -675,11 +666,10 @@ namespace Google.Protobuf
             // length:1 + tag:1 + value:4 = 6 bytes
             const int wrapperLength = 6;
 
-            var remaining = input.LimitedUnreadSpan;
-            if (remaining.Length >= wrapperLength)
+            if (input.reader.CurrentLimitedSpan.Length >= input.reader.CurrentSpanIndex + wrapperLength)
             {
                 // The entire wrapper message is already contained in `buffer`.
-                int length = remaining[0];
+                int length = input.reader.CurrentLimitedSpan[input.reader.CurrentSpanIndex];
                 if (length == 0)
                 {
                     input.reader.Advance(1);
@@ -687,13 +677,13 @@ namespace Google.Protobuf
                 }
                 // tag:1 + value:4 = length of 5 bytes
                 // field=1, type=32-bit = tag of 13
-                if (length != wrapperLength - 1 || remaining[1] != 13)
+                if (length != wrapperLength - 1 || input.reader.CurrentLimitedSpan[input.reader.CurrentSpanIndex + 1] != 13)
                 {
                     return ReadFloatWrapperSlow(ref input);
                 }
                 // ReadUnaligned uses processor architecture for endianness. Content is little endian and
                 // IsLittleEndian has been checked so this is safe to call.
-                var result = Unsafe.ReadUnaligned<float>(ref MemoryMarshal.GetReference(remaining.Slice(2)));
+                var result = Unsafe.ReadUnaligned<float>(ref MemoryMarshal.GetReference(input.reader.CurrentLimitedSpan.Slice(input.reader.CurrentSpanIndex + 2)));
                 input.reader.Advance(wrapperLength);
                 return result;
             }
@@ -733,11 +723,10 @@ namespace Google.Protobuf
             // length:1 + tag:1 + value:8 = 10 bytes
             const int wrapperLength = 10;
 
-            var remaining = input.LimitedUnreadSpan;
-            if (remaining.Length >= wrapperLength)
+            if (input.reader.CurrentLimitedSpan.Length >= input.reader.CurrentSpanIndex + wrapperLength)
             {
                 // The entire wrapper message is already contained in `buffer`.
-                int length = remaining[0];
+                int length = input.reader.CurrentLimitedSpan[input.reader.CurrentSpanIndex];
                 if (length == 0)
                 {
                     input.reader.Advance(1);
@@ -745,13 +734,13 @@ namespace Google.Protobuf
                 }
                 // tag:1 + value:8 = length of 9 bytes
                 // field=1, type=64-bit = tag of 9
-                if (length != wrapperLength - 1 || remaining[1] != 9)
+                if (length != wrapperLength - 1 || input.reader.CurrentLimitedSpan[input.reader.CurrentSpanIndex + 1] != 9)
                 {
                     return ReadDoubleWrapperSlow(ref input);
                 }
                 // ReadUnaligned uses processor architecture for endianness. Content is little endian and
                 // IsLittleEndian has been checked so this is safe to call.
-                var result = Unsafe.ReadUnaligned<double>(ref MemoryMarshal.GetReference(remaining.Slice(2)));
+                var result = Unsafe.ReadUnaligned<double>(ref MemoryMarshal.GetReference(input.reader.CurrentLimitedSpan.Slice(input.reader.CurrentSpanIndex + 2)));
                 input.reader.Advance(wrapperLength);
                 return result;
             }
@@ -796,11 +785,10 @@ namespace Google.Protobuf
             // length:1 + tag:1 + value:5(varint32-max) = 7 bytes
             const int wrapperLength = 7;
 
-            var remaining = input.LimitedUnreadSpan;
-            if (remaining.Length >= wrapperLength)
+            if (input.reader.CurrentLimitedSpan.Length >= input.reader.CurrentSpanIndex + wrapperLength)
             {
                 // The entire wrapper message is already contained in `buffer`.
-                int length = remaining[0];
+                int length = input.reader.CurrentLimitedSpan[input.reader.CurrentSpanIndex];
                 if (length == 0)
                 {
                     input.reader.Advance(1);
@@ -811,13 +799,13 @@ namespace Google.Protobuf
                 {
                     return ReadUInt32WrapperSlow(ref input);
                 }
-                long finalBufferPos = input.reader.Consumed + length + 1;
+                int finalBufferPos = input.reader.Consumed + length + 1;
                 // field=1, type=varint = tag of 8
-                if (remaining[1] != 8)
+                if (input.reader.CurrentLimitedSpan[input.reader.CurrentSpanIndex + 1] != 8)
                 {
                     return ReadUInt32WrapperSlow(ref input);
                 }
-                long pos0 = input.reader.Consumed;
+                int pos0 = input.reader.Consumed;
                 input.reader.Advance(2);
                 var result = input.ReadUInt32();
                 // Verify this message only contained a single field.
@@ -841,7 +829,7 @@ namespace Google.Protobuf
             {
                 return 0;
             }
-            long finalBufferPos = input.reader.Consumed + length;
+            int finalBufferPos = input.reader.Consumed + length;
             uint result = 0;
             do
             {
@@ -871,11 +859,10 @@ namespace Google.Protobuf
             // length:1 + tag:1 + value:10(varint64-max) = 12 bytes
             const int wrapperLength = 12;
 
-            var remaining = input.LimitedUnreadSpan;
-            if (remaining.Length >= wrapperLength)
+            if (input.reader.CurrentLimitedSpan.Length >= input.reader.CurrentSpanIndex + wrapperLength)
             {
                 // The entire wrapper message is already contained in `buffer`.
-                int length = remaining[0];
+                int length = input.reader.CurrentLimitedSpan[input.reader.CurrentSpanIndex];
                 if (length == 0)
                 {
                     input.reader.Advance(1);
@@ -886,12 +873,12 @@ namespace Google.Protobuf
                 {
                     return ReadUInt64WrapperSlow(ref input);
                 }
-                long finalBufferPos = input.reader.Consumed + length + 1;
-                if (remaining[1] != expectedTag)
+                int finalBufferPos = input.reader.Consumed + length + 1;
+                if (input.reader.CurrentLimitedSpan[input.reader.CurrentSpanIndex + 1] != expectedTag)
                 {
                     return ReadUInt64WrapperSlow(ref input);
                 }
-                long pos0 = input.reader.Consumed;
+                int pos0 = input.reader.Consumed;
                 input.reader.Advance(2);
                 var result = input.ReadUInt64();
                 // Verify this message only contained a single field.
@@ -1017,46 +1004,50 @@ namespace Google.Protobuf
         /// </summary>
         internal uint ReadRawVarint32()
         {
-            var current = LimitedUnreadSpan;
-
-            if (current.Length < 5)
+            if (reader.CurrentLimitedSpan.Length < reader.CurrentSpanIndex + 5)
             {
                 return SlowReadRawVarint32();
             }
 
-            int bufferPos = 0;
-            int tmp = current[bufferPos++];
+            int bufferPos = reader.CurrentSpanIndex;
+            int tmp = reader.CurrentLimitedSpan[bufferPos];
             if (tmp < 128)
             {
-                reader.Advance(bufferPos);
+                reader.Advance(1);
                 return (uint)tmp;
             }
             int result = tmp & 0x7f;
-            if ((tmp = current[bufferPos++]) < 128)
+            if ((tmp = reader.CurrentLimitedSpan[bufferPos + 1]) < 128)
             {
                 result |= tmp << 7;
+                reader.Advance(2);
             }
             else
             {
                 result |= (tmp & 0x7f) << 7;
-                if ((tmp = current[bufferPos++]) < 128)
+                if ((tmp = reader.CurrentLimitedSpan[bufferPos + 2]) < 128)
                 {
                     result |= tmp << 14;
+                    reader.Advance(3);
                 }
                 else
                 {
                     result |= (tmp & 0x7f) << 14;
-                    if ((tmp = current[bufferPos++]) < 128)
+                    if ((tmp = reader.CurrentLimitedSpan[bufferPos + 3]) < 128)
                     {
                         result |= tmp << 21;
+                        reader.Advance(4);
                     }
                     else
                     {
                         result |= (tmp & 0x7f) << 21;
-                        result |= (tmp = current[bufferPos++]) << 28;
+                        result |= (tmp = reader.CurrentLimitedSpan[bufferPos + 4]) << 28;
+
+                        reader.Advance(5);
+
                         if (tmp >= 128)
                         {
-                            reader.Advance(bufferPos);
+                            //reader.Advance(5);
 
                             // Discard upper 32 bits.
                             // Note that this has to use ReadByteSlow() as we only ensure we've
@@ -1076,7 +1067,7 @@ namespace Google.Protobuf
                     }
                 }
             }
-            reader.Advance(bufferPos);
+
             return (uint)result;
         }
 
@@ -1105,29 +1096,28 @@ namespace Google.Protobuf
         /// </summary>
         internal ulong ReadRawVarint64()
         {
-            var current = LimitedUnreadSpan;
-
-            if (current.Length < 10)
+            if (reader.CurrentLimitedSpan.Length < reader.CurrentSpanIndex + 10)
             {
                 return SlowReadRawVarint64();
             }
 
-            int bufferPos = 0;
-            ulong result = current[bufferPos++];
+            int bufferPos = reader.CurrentSpanIndex;
+            ulong result = reader.CurrentLimitedSpan[bufferPos];
             if (result < 128)
             {
-                reader.Advance(bufferPos);
+                reader.Advance(1);
                 return result;
             }
+            bufferPos++;
             result &= 0x7f;
             int shift = 7;
             do
             {
-                byte b = current[bufferPos++];
+                byte b = reader.CurrentLimitedSpan[bufferPos++];
                 result |= (ulong)(b & 0x7F) << shift;
                 if (b < 0x80)
                 {
-                    reader.Advance(bufferPos);
+                    reader.Advance(bufferPos - reader.CurrentSpanIndex);
                     return result;
                 }
                 shift += 7;
@@ -1144,13 +1134,13 @@ namespace Google.Protobuf
         {
             const int length = 4;
 
-            ReadOnlySpan<byte> current = LimitedUnreadSpan;
-            if (current.Length >= length)
+            if (reader.CurrentLimitedSpan.Length >= reader.CurrentSpanIndex + length)
             {
                 // Fast path. All data is in the current span.
+                uint result = BinaryPrimitives.ReadUInt32LittleEndian(reader.CurrentLimitedSpan.Slice(reader.CurrentSpanIndex));
                 reader.Advance(length);
 
-                return BinaryPrimitives.ReadUInt32LittleEndian(current);
+                return result;
             }
             else
             {
@@ -1178,13 +1168,13 @@ namespace Google.Protobuf
         {
             const int length = 8;
 
-            ReadOnlySpan<byte> current = LimitedUnreadSpan;
-            if (current.Length >= length)
+            if (reader.CurrentLimitedSpan.Length >= reader.CurrentSpanIndex + length)
             {
                 // Fast path. All data is in the current span.
+                ulong result = BinaryPrimitives.ReadUInt64LittleEndian(reader.CurrentLimitedSpan.Slice(reader.CurrentSpanIndex));
                 reader.Advance(length);
 
-                return BinaryPrimitives.ReadUInt64LittleEndian(current);
+                return result;
             }
             else
             {
@@ -1219,13 +1209,13 @@ namespace Google.Protobuf
                 throw InvalidProtocolBufferException.NegativeSize();
             }
             
-            byteLimit += (int)reader.Consumed;
-            int oldLimit = currentLimit;
+            byteLimit += reader.Consumed;
+            int oldLimit = reader.CurrentLimit;
             if (byteLimit > oldLimit)
             {
                 throw InvalidProtocolBufferException.TruncatedMessage();
             }
-            currentLimit = byteLimit;
+            reader.SetLimit(byteLimit);
 
             return oldLimit;
         }
@@ -1235,7 +1225,7 @@ namespace Google.Protobuf
         /// </summary>
         internal void PopLimit(int oldLimit)
         {
-            currentLimit = oldLimit;
+            reader.SetLimit(oldLimit);
         }
 
         /// <summary>
@@ -1247,7 +1237,7 @@ namespace Google.Protobuf
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return reader.Consumed >= currentLimit;
+                return reader.Consumed >= reader.CurrentLimit;
             }
         }
 
@@ -1291,7 +1281,7 @@ namespace Google.Protobuf
         {
             ThrowEndOfInputIfFalse(reader.TryRead(out byte b));
 
-            if (reader.Consumed > currentLimit)
+            if (reader.Consumed > reader.CurrentLimit)
             {
                 ThrowTruncatedMessage();
             }
@@ -1301,10 +1291,10 @@ namespace Google.Protobuf
 
         private void CheckRequestedDataAvailable(int length)
         {
-            if (length + reader.Consumed > currentLimit)
+            if (length + reader.Consumed > reader.CurrentLimit)
             {
                 // Read to the end of the limit.
-                reader.Advance(Math.Min(currentLimit, reader.Remaining));
+                reader.Advance(Math.Min(reader.CurrentLimit, reader.Remaining));
                 // Then fail.
                 ThrowTruncatedMessage();
             }
@@ -1322,17 +1312,6 @@ namespace Google.Protobuf
             CheckRequestedDataAvailable(destination.Length);
 
             reader.TryCopyTo(destination);
-        }
-
-        private ReadOnlySpan<byte> LimitedUnreadSpan
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                // Get the current unread span content. This content is limited to content for the current message.
-                // When all the content we want to read is within the span's length then we can go down a fast path.
-                return reader.CurrentSpan.Slice(reader.CurrentSpanIndex, Math.Min(currentLimit, reader.CurrentSpan.Length) - reader.CurrentSpanIndex);
-            }
         }
     }
 }
