@@ -42,7 +42,15 @@ namespace Google.Protobuf.Benchmarks
         // if you start from "-f net461", it goes horribly wrong)
         public static void Main(string[] args)
         {
-            BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
+            SerializationBenchmark s = new SerializationBenchmark();
+            s.Configuration = SerializationBenchmark.Configurations[0];
+            s.GlobalSetup();
+            for (int i = 0; i < 10000000; i++)
+            {
+                s.ParseFromReadOnlySequence();
+            }
+
+            //BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
         }
     }
 }

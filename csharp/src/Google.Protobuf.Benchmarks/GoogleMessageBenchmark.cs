@@ -53,6 +53,7 @@ namespace Google.Protobuf.Benchmarks
                     SetString(googleMessage1, 1);
                     AddRepeatingItems(googleMessage1, 1);
                     googleMessage1.Field2 = 2;
+                    googleMessage1.Field12 = true;
                     googleMessage1.Field15 = new GoogleMessage1SubMessage();
                     googleMessage1.Field15.Field1 = 1;
                     break;
@@ -60,13 +61,15 @@ namespace Google.Protobuf.Benchmarks
                     SetString(googleMessage1, 1024);
                     AddRepeatingItems(googleMessage1, 1024);
                     googleMessage1.Field2 = 2;
+                    googleMessage1.Field12 = true;
                     googleMessage1.Field15 = new GoogleMessage1SubMessage();
                     googleMessage1.Field15.Field1 = 1;
                     break;
                 case MessageSize.Large:
-                    SetString(googleMessage1, 1024 * 512);
-                    AddRepeatingItems(googleMessage1, 1024 * 512);
+                    SetString(googleMessage1, 1024 * 128);
+                    AddRepeatingItems(googleMessage1, 1024 * 128);
                     googleMessage1.Field2 = 2;
+                    googleMessage1.Field12 = true;
                     googleMessage1.Field15 = new GoogleMessage1SubMessage();
                     googleMessage1.Field15.Field1 = 1;
                     break;

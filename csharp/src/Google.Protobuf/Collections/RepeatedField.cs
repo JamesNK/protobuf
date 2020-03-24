@@ -106,9 +106,23 @@ namespace Google.Protobuf.Collections
                 if (length > 0)
                 {
                     int oldLimit = input.PushLimit(length);
-                    while (!input.ReachedLimit)
+                    if (codec.FixedSize > 0)
                     {
-                        Add(reader(input));
+                        // If the content is fixed size then we can calculate the size
+                        // of the repeated field and set the size once.
+                        EnsureSize(count + (length / codec.FixedSize));
+
+                        while (!input.ReachedLimit)
+                        {
+                            array[count++] = reader(input);
+                        }
+                    }
+                    else
+                    {
+                        while (!input.ReachedLimit)
+                        {
+                            Add(reader(input));
+                        }
                     }
                     input.PopLimit(oldLimit);
                 }
@@ -132,8 +146,6 @@ namespace Google.Protobuf.Collections
         /// <param name="codec">The codec to use in order to read each entry.</param>
         public void AddEntriesFrom(ref CodedInputReader input, FieldCodec<T> codec)
         {
-            // TODO: Inline some of the Add code, so we can avoid checking the size on every
-            // iteration.
             uint tag = input.LastTag;
             var reader = codec.BufferValueReader;
             // Non-nullable value types can be packed or not.
@@ -143,9 +155,23 @@ namespace Google.Protobuf.Collections
                 if (length > 0)
                 {
                     int oldLimit = input.PushLimit(length);
-                    while (!input.ReachedLimit)
+                    if (codec.FixedSize > 0)
                     {
-                        Add(reader(ref input));
+                        // If the content is fixed size then we can calculate the size
+                        // of the repeated field and set the size once.
+                        EnsureSize(count + (length / codec.FixedSize));
+
+                        while (!input.ReachedLimit)
+                        {
+                            array[count++] = reader(ref input);
+                        }
+                    }
+                    else
+                    {
+                        while (!input.ReachedLimit)
+                        {
+                            Add(reader(ref input));
+                        }
                     }
                     input.PopLimit(oldLimit);
                 }

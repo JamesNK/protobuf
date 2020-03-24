@@ -44,7 +44,7 @@ namespace Google.Protobuf
     /// https://github.com/dotnet/runtime/blob/071da4c41aa808c949a773b92dca6f88de9d11f3/src/libraries/System.Memory/src/System/Buffers/SequenceReader.cs
     /// </summary>
     [SecuritySafeCritical]
-    internal ref partial struct LimitedSequenceReader<T> where T : IEquatable<T>
+    internal ref partial struct LimitedSequenceReader
     {
         private SequencePosition _currentPosition;
         private SequencePosition _nextPosition;
@@ -52,7 +52,7 @@ namespace Google.Protobuf
         private readonly int _length;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LimitedSequenceReader(ReadOnlySequence<T> sequence)
+        public LimitedSequenceReader(ReadOnlySequence<byte> sequence)
         {
             CurrentSpanIndex = 0;
             Consumed = 0;
@@ -61,16 +61,26 @@ namespace Google.Protobuf
             _length = (int)Sequence.Length;
             CurrentLimit = _length;
 
-            var first = sequence.First.Span;
-            _nextPosition = sequence.GetPosition(first.Length);
-            CurrentSpan = first;
-            CurrentLimitedSpan = first;
-            _moreData = first.Length > 0;
-
-            if (!_moreData && !sequence.IsSingleSegment)
+            if (_length > 0)
             {
-                _moreData = true;
-                GetNextSpan();
+                var first = sequence.First.Span;
+                _nextPosition = sequence.GetPosition(first.Length);
+                _currentSpan = first;
+                CurrentLimitedSpan = first;
+                _moreData = first.Length > 0;
+
+                if (!_moreData && !sequence.IsSingleSegment)
+                {
+                    _moreData = true;
+                    GetNextSpan();
+                }
+            }
+            else
+            {
+                _moreData = false;
+                _nextPosition = _currentPosition;
+                _currentSpan = ReadOnlySpan<byte>.Empty;
+                CurrentLimitedSpan = ReadOnlySpan<byte>.Empty;
             }
         }
 
@@ -82,42 +92,24 @@ namespace Google.Protobuf
         /// <summary>
         /// The underlying <see cref="ReadOnlySequence{T}"/> for the reader.
         /// </summary>
-        public ReadOnlySequence<T> Sequence { get; }
+        public ReadOnlySequence<byte> Sequence { get; }
 
         public SequencePosition Position => Sequence.GetPosition(CurrentSpanIndex, _currentPosition);
 
-        /// <summary>
-        /// The current segment in the <see cref="Sequence"/> as a span.
-        /// </summary>
-        public ReadOnlySpan<T> CurrentSpan { get; private set; }
+        private ReadOnlySpan<byte> _currentSpan;
 
-        /// <summary>
-        /// The current segment in the <see cref="Sequence"/> as a span.
-        /// </summary>
-        public ReadOnlySpan<T> CurrentLimitedSpan { get; private set; }
+        public ReadOnlySpan<byte> CurrentLimitedSpan { get; private set; }
 
-        /// <summary>
-        /// The index in the <see cref="CurrentSpan"/>.
-        /// </summary>
         public int CurrentSpanIndex { get; private set; }
 
-        /// <summary>
-        /// The unread portion of the <see cref="CurrentSpan"/>.
-        /// </summary>
-        public ReadOnlySpan<T> UnreadSpan
+        public ReadOnlySpan<byte> UnreadSpan
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => CurrentSpan.Slice(CurrentSpanIndex);
+            get => _currentSpan.Slice(CurrentSpanIndex);
         }
 
-        /// <summary>
-        /// The total number of <typeparamref name="T"/>'s processed by the reader.
-        /// </summary>
         public int Consumed { get; private set; }
 
-        /// <summary>
-        /// Remaining <typeparamref name="T"/>'s in the reader's <see cref="Sequence"/>.
-        /// </summary>
         public int Remaining => _length - Consumed;
 
         public int CurrentLimit { get; private set; }
@@ -125,33 +117,7 @@ namespace Google.Protobuf
         public void SetLimit(int newLimit)
         {
             CurrentLimit = newLimit;
-            CurrentLimitedSpan = CurrentSpan.Slice(0, Math.Min(CurrentLimit, CurrentSpan.Length));
-        }
-
-        /// <summary>
-        /// Read the next value and advance the reader.
-        /// </summary>
-        /// <param name="value">The next value or default if at the end.</param>
-        /// <returns>False if at the end of the reader.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryRead(out T value)
-        {
-            if (End)
-            {
-                value = default;
-                return false;
-            }
-
-            value = CurrentSpan[CurrentSpanIndex];
-            CurrentSpanIndex++;
-            Consumed++;
-
-            if (CurrentSpanIndex >= CurrentSpan.Length)
-            {
-                GetNextSpan();
-            }
-
-            return true;
+            CurrentLimitedSpan = _currentSpan.Slice(0, Math.Min(CurrentLimit, _currentSpan.Length));
         }
 
         /// <summary>
@@ -193,28 +159,28 @@ namespace Google.Protobuf
             _currentPosition = Sequence.Start;
             _nextPosition = _currentPosition;
 
-            if (Sequence.TryGet(ref _nextPosition, out ReadOnlyMemory<T> memory, advance: true))
+            if (Sequence.TryGet(ref _nextPosition, out ReadOnlyMemory<byte> memory, advance: true))
             {
                 _moreData = true;
 
                 if (memory.Length == 0)
                 {
-                    CurrentSpan = default;
+                    _currentSpan = default;
                     CurrentLimitedSpan = default;
                     // No data in the first span, move to one with data
                     GetNextSpan();
                 }
                 else
                 {
-                    CurrentSpan = memory.Span;
-                    CurrentLimitedSpan = CurrentSpan.Slice(0, Math.Min(CurrentLimit, CurrentSpan.Length));
+                    _currentSpan = memory.Span;
+                    CurrentLimitedSpan = _currentSpan.Slice(0, Math.Min(CurrentLimit, _currentSpan.Length));
                 }
             }
             else
             {
                 // No data in any spans and at end of sequence
                 _moreData = false;
-                CurrentSpan = default;
+                _currentSpan = default;
                 CurrentLimitedSpan = default;
             }
         }
@@ -227,19 +193,19 @@ namespace Google.Protobuf
             if (!Sequence.IsSingleSegment)
             {
                 SequencePosition previousNextPosition = _nextPosition;
-                while (Sequence.TryGet(ref _nextPosition, out ReadOnlyMemory<T> memory, advance: true))
+                while (Sequence.TryGet(ref _nextPosition, out ReadOnlyMemory<byte> memory, advance: true))
                 {
                     _currentPosition = previousNextPosition;
                     if (memory.Length > 0)
                     {
-                        CurrentSpan = memory.Span;
-                        CurrentLimitedSpan = CurrentSpan.Slice(0, Math.Min(CurrentLimit, CurrentSpan.Length));
+                        _currentSpan = memory.Span;
+                        CurrentLimitedSpan = _currentSpan.Slice(0, Math.Min(CurrentLimit, _currentSpan.Length));
                         CurrentSpanIndex = 0;
                         return;
                     }
                     else
                     {
-                        CurrentSpan = default;
+                        _currentSpan = default;
                         CurrentLimitedSpan = default;
                         CurrentSpanIndex = 0;
                         previousNextPosition = _nextPosition;
@@ -255,7 +221,7 @@ namespace Google.Protobuf
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Advance(int count)
         {
-            if (CurrentSpan.Length - CurrentSpanIndex > count)
+            if (_currentSpan.Length - CurrentSpanIndex > count)
             {
                 CurrentSpanIndex += count;
                 Consumed += count;
@@ -277,7 +243,7 @@ namespace Google.Protobuf
 
             Consumed += count;
             CurrentSpanIndex += count;
-            if (CurrentSpanIndex >= CurrentSpan.Length)
+            if (CurrentSpanIndex >= _currentSpan.Length)
             {
                 GetNextSpan();
             }
@@ -295,7 +261,7 @@ namespace Google.Protobuf
             Consumed += count;
             CurrentSpanIndex += count;
 
-            Debug.Assert(CurrentSpanIndex < CurrentSpan.Length);
+            Debug.Assert(CurrentSpanIndex < _currentSpan.Length);
         }
 
         private void AdvanceToNextSpan(int count)
@@ -303,7 +269,7 @@ namespace Google.Protobuf
             Consumed += count;
             while (_moreData)
             {
-                int remaining = CurrentSpan.Length - CurrentSpanIndex;
+                int remaining = _currentSpan.Length - CurrentSpanIndex;
 
                 if (remaining > count)
                 {
@@ -335,9 +301,9 @@ namespace Google.Protobuf
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryCopyTo(Span<T> destination)
+        public bool TryCopyTo(Span<byte> destination)
         {
-            ReadOnlySpan<T> firstSpan = UnreadSpan;
+            ReadOnlySpan<byte> firstSpan = UnreadSpan;
             if (firstSpan.Length >= destination.Length)
             {
                 firstSpan.Slice(0, destination.Length).CopyTo(destination);
@@ -347,24 +313,24 @@ namespace Google.Protobuf
             return TryCopyMultisegment(destination);
         }
 
-        internal bool TryCopyMultisegment(Span<T> destination)
+        internal bool TryCopyMultisegment(Span<byte> destination)
         {
             if (Remaining < destination.Length)
             {
                 return false;
             }
 
-            ReadOnlySpan<T> firstSpan = UnreadSpan;
+            ReadOnlySpan<byte> firstSpan = UnreadSpan;
             Debug.Assert(firstSpan.Length < destination.Length);
             firstSpan.CopyTo(destination);
             int copied = firstSpan.Length;
 
             SequencePosition next = _nextPosition;
-            while (Sequence.TryGet(ref next, out ReadOnlyMemory<T> nextSegment, true))
+            while (Sequence.TryGet(ref next, out ReadOnlyMemory<byte> nextSegment, true))
             {
                 if (nextSegment.Length > 0)
                 {
-                    ReadOnlySpan<T> nextSpan = nextSegment.Span;
+                    ReadOnlySpan<byte> nextSpan = nextSegment.Span;
                     int toCopy = Math.Min(nextSpan.Length, destination.Length - copied);
                     nextSpan.Slice(0, toCopy).CopyTo(destination.Slice(copied));
                     copied += toCopy;

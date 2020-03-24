@@ -55,11 +55,11 @@ namespace Google.Protobuf.Benchmarks
         /// </summary>
         public static SerializationConfig[] Configurations => new[]
         {
-            new SerializationConfig("dataset.google_message1_proto3.pb"),
-            GoogleMessageBenchmark.CreateGoogleMessageConfig(MessageSize.Empty),
+            //new SerializationConfig("dataset.google_message1_proto3.pb"),
+            //GoogleMessageBenchmark.CreateGoogleMessageConfig(MessageSize.Empty),
             GoogleMessageBenchmark.CreateGoogleMessageConfig(MessageSize.Small),
-            GoogleMessageBenchmark.CreateGoogleMessageConfig(MessageSize.Medium),
-            GoogleMessageBenchmark.CreateGoogleMessageConfig(MessageSize.Large)
+            //GoogleMessageBenchmark.CreateGoogleMessageConfig(MessageSize.Medium),
+            //GoogleMessageBenchmark.CreateGoogleMessageConfig(MessageSize.Large)
         };
 
         [ParamsSource(nameof(Configurations))]
@@ -80,50 +80,50 @@ namespace Google.Protobuf.Benchmarks
             subTests = Configuration.Payloads.Select(p => new SubTest(p, (IBufferMessage)parser.ParseFrom(p))).ToList();
         }
 
-        [Benchmark]
-        public void WriteToStream()
-        {
-            foreach (var subTest in subTests)
-            {
-                subTest.WriteToStream();
-            }
-        }
+        //[Benchmark]
+        //public void WriteToStream()
+        //{
+        //    foreach (var subTest in subTests)
+        //    {
+        //        subTest.WriteToStream();
+        //    }
+        //}
 
-        [Benchmark]
-        public void WriteToBufferWriter()
-        {
-            foreach (var subTest in subTests)
-            {
-                subTest.WriteToBufferWriter();
-            }
-        }
+        //[Benchmark]
+        //public void WriteToBufferWriter()
+        //{
+        //    foreach (var subTest in subTests)
+        //    {
+        //        subTest.WriteToBufferWriter();
+        //    }
+        //}
 
-        [Benchmark]
-        public void WriteToPipeWriter()
-        {
-            foreach (var subTest in subTests)
-            {
-                subTest.WriteToPipeWriter();
-            }
-        }
+        //[Benchmark]
+        //public void WriteToPipeWriter()
+        //{
+        //    foreach (var subTest in subTests)
+        //    {
+        //        subTest.WriteToPipeWriter();
+        //    }
+        //}
 
-        [Benchmark]
-        public void ToByteArray()
-        {
-            foreach (var subTest in subTests)
-            {
-                subTest.ToByteArray();
-            }
-        }
+        //[Benchmark]
+        //public void ToByteArray()
+        //{
+        //    foreach (var subTest in subTests)
+        //    {
+        //        subTest.ToByteArray();
+        //    }
+        //}
 
-        [Benchmark]
-        public void ParseFromByteString()
-        {
-            foreach (var subTest in subTests)
-            {
-                subTest.ParseFromByteString(parser);
-            }
-        }
+        //[Benchmark]
+        //public void ParseFromByteString()
+        //{
+        //    foreach (var subTest in subTests)
+        //    {
+        //        subTest.ParseFromByteString(parser);
+        //    }
+        //}
 
         [Benchmark]
         public void ParseFromNewByteString()
@@ -134,14 +134,14 @@ namespace Google.Protobuf.Benchmarks
             }
         }
 
-        [Benchmark]
-        public void ParseFromStream()
-        {
-            foreach (var subTest in subTests)
-            {
-                subTest.ParseFromStream(parser);
-            }
-        }
+        //[Benchmark]
+        //public void ParseFromStream()
+        //{
+        //    foreach (var subTest in subTests)
+        //    {
+        //        subTest.ParseFromStream(parser);
+        //    }
+        //}
 
         [Benchmark]
         public void ParseFromReadOnlySequence()

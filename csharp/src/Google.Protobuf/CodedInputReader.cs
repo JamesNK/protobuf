@@ -64,7 +64,7 @@ namespace Google.Protobuf
     {
         internal const int DefaultRecursionLimit = 100;
 
-        private LimitedSequenceReader<byte> reader;
+        private LimitedSequenceReader reader;
         private uint lastTag;
         private int recursionDepth;
         private Decoder decoder;
@@ -81,7 +81,7 @@ namespace Google.Protobuf
 
         internal CodedInputReader(ReadOnlySequence<byte> input, int recursionLimit)
         {
-            this.reader = new LimitedSequenceReader<byte>(input);
+            this.reader = new LimitedSequenceReader(input);
             this.lastTag = 0;
             this.recursionDepth = 0;
             this.recursionLimit = recursionLimit;
@@ -177,10 +177,9 @@ namespace Google.Protobuf
         public uint ReadTag()
         {
             // Optimize for common case of a 2 byte tag that is in the current span
-            var position = reader.CurrentSpanIndex;
-            if (position + 2 < reader.CurrentLimitedSpan.Length)
+            if (reader.CurrentSpanIndex + 1 < reader.CurrentLimitedSpan.Length)
             {
-                int tmp = reader.CurrentLimitedSpan[position];
+                int tmp = reader.CurrentLimitedSpan[reader.CurrentSpanIndex];
                 if (tmp < 128)
                 {
                     lastTag = (uint)tmp;
@@ -189,7 +188,7 @@ namespace Google.Protobuf
                 else
                 {
                     int result = tmp & 0x7f;
-                    if ((tmp = reader.CurrentLimitedSpan[position + 1]) < 128)
+                    if ((tmp = reader.CurrentLimitedSpan[reader.CurrentSpanIndex + 1]) < 128)
                     {
                         result |= tmp << 7;
                         lastTag = (uint)result;
@@ -1279,14 +1278,23 @@ namespace Google.Protobuf
 
         private byte ReadByteSlow()
         {
-            ThrowEndOfInputIfFalse(reader.TryRead(out byte b));
-
-            if (reader.Consumed > reader.CurrentLimit)
+            if (reader.CurrentSpanIndex < reader.CurrentLimitedSpan.Length)
+            {
+                byte b = reader.CurrentLimitedSpan[reader.CurrentSpanIndex];
+                reader.Advance(1);
+                return b;
+            }
+            else if (reader.End)
+            {
+                ThrowEndOfInput();
+            }
+            else
             {
                 ThrowTruncatedMessage();
             }
 
-            return b;
+            // Exception will always be thrown before reaching here.
+            return 0;
         }
 
         private void CheckRequestedDataAvailable(int length)
