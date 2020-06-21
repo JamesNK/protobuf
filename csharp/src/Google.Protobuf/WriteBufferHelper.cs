@@ -117,8 +117,8 @@ namespace Google.Protobuf
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void RefreshBuffer(ref Span<byte> buffer, ref WriterInternalState state)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void RefreshBuffer(ref Span<byte> buffer, ref WriterInternalState state, int minimumLength)
         {
             if (state.writeBufferHelper.codedOutputStream?.InternalOutputStream != null)
             {
@@ -132,7 +132,8 @@ namespace Google.Protobuf
                 // commit the bytes and get a new buffer to write to.
                 state.writeBufferHelper.bufferWriter.Advance(state.position);
                 state.position = 0;
-                buffer = state.writeBufferHelper.bufferWriter.GetSpan();
+                // Give minimum length to GetSpan. This ensures a fresh buffer is fetched if the current one does not have enough capacity.
+                buffer = state.writeBufferHelper.bufferWriter.GetSpan(sizeHint: minimumLength);
                 state.limit = buffer.Length;
             }
             else

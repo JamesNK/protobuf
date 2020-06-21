@@ -46,7 +46,7 @@ namespace Google.Protobuf.Buffers
     {
         private T[] _buffer;
         private int _index;
-
+        private int? _maxGrowBy;
         private const int DefaultInitialBufferSize = 256;
 
         /// <summary>
@@ -63,7 +63,19 @@ namespace Google.Protobuf.Buffers
         /// Userful for testing writing to buffer writer with a lot of small segments.
         /// If set, it limits the max number of bytes by which the buffer grows by at once.
         /// </summary>
-        public int? MaxGrowBy { get; set; }
+        public int? MaxGrowBy
+        {
+            get => _maxGrowBy;
+            set => _maxGrowBy = value != null ? Math.Max(value.Value, CodedOutputStream.MinimumBufferSize) : (int?)null;
+        }
+
+        /// <summary>
+        /// Reset index to the start so the writer can be reused.
+        /// </summary>
+        public void Reset()
+        {
+            _index = 0;
+        }
 
         /// <summary>
         /// Creates an instance of an <see cref="ArrayBufferWriter{T}"/>, in which data can be written to,
@@ -75,9 +87,6 @@ namespace Google.Protobuf.Buffers
         /// </exception>
         public ArrayBufferWriter(int initialCapacity)
         {
-            if (initialCapacity <= 0)
-                throw new ArgumentException(nameof(initialCapacity));
-
             _buffer = new T[initialCapacity];
             _index = 0;
         }

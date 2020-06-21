@@ -53,7 +53,6 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes a double field value, without a tag, to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteDouble(ref Span<byte> buffer, ref WriterInternalState state, double value)
         {
             WriteRawLittleEndian64(ref buffer, ref state, (ulong)BitConverter.DoubleToInt64Bits(value));
@@ -62,43 +61,28 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes a float field value, without a tag, to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void WriteFloat(ref Span<byte> buffer, ref WriterInternalState state, float value)
         {
             const int length = sizeof(float);
-            if (state.limit - state.position >= length)
+            if (state.position + length > buffer.Length)
             {
-                // if there's enough space in the buffer, write the float directly into the buffer
-                var floatSpan = buffer.Slice(state.position, length);
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(floatSpan), value);
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    floatSpan.Reverse();
-                }
-                state.position += length;
+                WriteBufferHelper.RefreshBuffer(ref buffer, ref state, length);
             }
-            else
+
+            // if there's enough space in the buffer, write the float directly into the buffer
+            var floatSpan = buffer.Slice(state.position, length);
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(floatSpan), value);
+
+            if (!BitConverter.IsLittleEndian)
             {
-                Span<byte> floatSpan = stackalloc byte[length];
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(floatSpan), value);
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    floatSpan.Reverse();
-                }
-
-                WriteRawByte(ref buffer, ref state, floatSpan[0]);
-                WriteRawByte(ref buffer, ref state, floatSpan[1]);
-                WriteRawByte(ref buffer, ref state, floatSpan[2]);
-                WriteRawByte(ref buffer, ref state, floatSpan[3]);
+                floatSpan.Reverse();
             }
+            state.position += length;
         }
 
         /// <summary>
         /// Writes a uint64 field value, without a tag, to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUInt64(ref Span<byte> buffer, ref WriterInternalState state, ulong value)
         {
             WriteRawVarint64(ref buffer, ref state, value);
@@ -107,7 +91,6 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes an int64 field value, without a tag, to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt64(ref Span<byte> buffer, ref WriterInternalState state, long value)
         {
             WriteRawVarint64(ref buffer, ref state, (ulong)value);
@@ -116,7 +99,6 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes an int32 field value, without a tag, to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt32(ref Span<byte> buffer, ref WriterInternalState state, int value)
         {
             if (value >= 0)
@@ -133,7 +115,6 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes a fixed64 field value, without a tag, to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteFixed64(ref Span<byte> buffer, ref WriterInternalState state, ulong value)
         {
             WriteRawLittleEndian64(ref buffer, ref state, value);
@@ -142,7 +123,6 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes a fixed32 field value, without a tag, to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteFixed32(ref Span<byte> buffer, ref WriterInternalState state, uint value)
         {
             WriteRawLittleEndian32(ref buffer, ref state, value);
@@ -151,7 +131,6 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes a bool field value, without a tag, to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteBool(ref Span<byte> buffer, ref WriterInternalState state, bool value)
         {
             WriteRawByte(ref buffer, ref state, value ? (byte)1 : (byte)0);
@@ -161,14 +140,13 @@ namespace Google.Protobuf
         /// Writes a string field value, without a tag, to the stream.
         /// The data is length-prefixed.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteString(ref Span<byte> buffer, ref WriterInternalState state, string value)
         {
             // Optimise the case where we have enough space to write
             // the string directly to the buffer, which should be common.
             int length = Utf8Encoding.GetByteCount(value);
             WriteLength(ref buffer, ref state, length);
-            if (state.limit - state.position >= length)
+            if (buffer.Length - state.position >= length)
             {
                 if (length == value.Length) // Must be all ASCII...
                 {
@@ -214,7 +192,6 @@ namespace Google.Protobuf
         /// Write a byte string, without a tag, to the stream.
         /// The data is length-prefixed.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteBytes(ref Span<byte> buffer, ref WriterInternalState state, ByteString value)
         {
             WriteLength(ref buffer, ref state, value.Length);
@@ -224,7 +201,6 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes a uint32 value, without a tag, to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUInt32(ref Span<byte> buffer, ref WriterInternalState state, uint value)
         {
             WriteRawVarint32(ref buffer, ref state, value);
@@ -233,7 +209,6 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes an enum value, without a tag, to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteEnum(ref Span<byte> buffer, ref WriterInternalState state, int value)
         {
             WriteInt32(ref buffer, ref state, value);
@@ -242,7 +217,6 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes an sfixed32 value, without a tag, to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteSFixed32(ref Span<byte> buffer, ref WriterInternalState state, int value)
         {
             WriteRawLittleEndian32(ref buffer, ref state, (uint)value);
@@ -251,7 +225,6 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes an sfixed64 value, without a tag, to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteSFixed64(ref Span<byte> buffer, ref WriterInternalState state, long value)
         {
             WriteRawLittleEndian64(ref buffer, ref state, (ulong)value);
@@ -260,7 +233,6 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes an sint32 value, without a tag, to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteSInt32(ref Span<byte> buffer, ref WriterInternalState state, int value)
         {
             WriteRawVarint32(ref buffer, ref state, EncodeZigZag32(value));
@@ -269,7 +241,6 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes an sint64 value, without a tag, to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteSInt64(ref Span<byte> buffer, ref WriterInternalState state, long value)
         {
             WriteRawVarint64(ref buffer, ref state, EncodeZigZag64(value));
@@ -281,8 +252,6 @@ namespace Google.Protobuf
         /// <remarks>
         /// This method simply writes a rawint, but exists for clarity in calling code.
         /// </remarks>
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteLength(ref Span<byte> buffer, ref WriterInternalState state, int length)
         {
             WriteRawVarint32(ref buffer, ref state, (uint)length);
@@ -296,107 +265,94 @@ namespace Google.Protobuf
         /// there's enough buffer space left to whizz through without checking
         /// for each byte; otherwise, we resort to calling WriteRawByte each time.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteRawVarint32(ref Span<byte> buffer, ref WriterInternalState state, uint value)
         {
             // Optimize for the common case of a single byte value
-            if (value < 128 && state.position < state.limit)
+            if (value < 128 && state.position < buffer.Length)
             {
                 buffer[state.position++] = (byte)value;
                 return;
             }
 
-            while (value > 127 && state.position < state.limit)
+            // Fast path when capacity is available
+            while (state.position < buffer.Length)
             {
-                buffer[state.position++] = (byte)((value & 0x7F) | 0x80);
-                value >>= 7;
+                if (value > 127)
+                {
+                    buffer[state.position++] = (byte)((value & 0x7F) | 0x80);
+                    value >>= 7;
+                }
+                else
+                {
+                    buffer[state.position++] = (byte)value;
+                    return;
+                }
             }
+
             while (value > 127)
             {
                 WriteRawByte(ref buffer, ref state, (byte)((value & 0x7F) | 0x80));
                 value >>= 7;
             }
-            if (state.position < state.limit)
-            {
-                buffer[state.position++] = (byte)value;
-            }
-            else
-            {
-                WriteRawByte(ref buffer, ref state, (byte)value);
-            }
+
+            WriteRawByte(ref buffer, ref state, (byte)value);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteRawVarint64(ref Span<byte> buffer, ref WriterInternalState state, ulong value)
         {
-            while (value > 127 && state.position < state.limit)
+            // Optimize for the common case of a single byte value
+            if (value < 128 && state.position < buffer.Length)
             {
-                buffer[state.position++] = (byte)((value & 0x7F) | 0x80);
-                value >>= 7;
+                buffer[state.position++] = (byte)value;
+                return;
             }
+
+            // Fast path when capacity is available
+            while (state.position < buffer.Length)
+            {
+                if (value > 127)
+                {
+                    buffer[state.position++] = (byte)((value & 0x7F) | 0x80);
+                    value >>= 7;
+                }
+                else
+                {
+                    buffer[state.position++] = (byte)value;
+                    return;
+                }
+            }
+
             while (value > 127)
             {
                 WriteRawByte(ref buffer, ref state, (byte)((value & 0x7F) | 0x80));
                 value >>= 7;
             }
-            if (state.position < state.limit)
-            {
-                buffer[state.position++] = (byte)value;
-            }
-            else
-            {
-                WriteRawByte(ref buffer, ref state, (byte)value);
-            }
+            
+            WriteRawByte(ref buffer, ref state, (byte)value);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteRawLittleEndian32(ref Span<byte> buffer, ref WriterInternalState state, uint value)
         {
             const int length = sizeof(uint);
-            if (state.position + length > state.limit)
+            if (state.position + length > buffer.Length)
             {
-                WriteRawByte(ref buffer, ref state, (byte)value);
-                WriteRawByte(ref buffer, ref state, (byte)(value >> 8));
-                WriteRawByte(ref buffer, ref state, (byte)(value >> 16));
-                WriteRawByte(ref buffer, ref state, (byte)(value >> 24));
+                WriteBufferHelper.RefreshBuffer(ref buffer, ref state, length);
             }
-            else
-            {
-                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(state.position), value);
-                state.position += length;
-            }
+
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(state.position), value);
+            state.position += length;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteRawLittleEndian64(ref Span<byte> buffer, ref WriterInternalState state, ulong value)
         {
             const int length = sizeof(ulong);
-            if (state.position + length > state.limit)
+            if (state.position + length > buffer.Length)
             {
-                WriteRawByte(ref buffer, ref state, (byte)value);
-                WriteRawByte(ref buffer, ref state, (byte)(value >> 8));
-                WriteRawByte(ref buffer, ref state, (byte)(value >> 16));
-                WriteRawByte(ref buffer, ref state, (byte)(value >> 24));
-                WriteRawByte(ref buffer, ref state, (byte)(value >> 32));
-                WriteRawByte(ref buffer, ref state, (byte)(value >> 40));
-                WriteRawByte(ref buffer, ref state, (byte)(value >> 48));
-                WriteRawByte(ref buffer, ref state, (byte)(value >> 56));
+                WriteBufferHelper.RefreshBuffer(ref buffer, ref state, length);
             }
-            else
-            {
-                // TODO(jtattermusch): According to the benchmarks, writing byte-by-byte is actually faster
-                // than using BinaryPrimitives.WriteUInt64LittleEndian.
-                // This is strange especially because WriteUInt32LittleEndian seems to be much faster
-                // in terms of throughput.
-                buffer[state.position++] = ((byte)value);
-                buffer[state.position++] = ((byte)(value >> 8));
-                buffer[state.position++] = ((byte)(value >> 16));
-                buffer[state.position++] = ((byte)(value >> 24));
-                buffer[state.position++] = ((byte)(value >> 32));
-                buffer[state.position++] = ((byte)(value >> 40));
-                buffer[state.position++] = ((byte)(value >> 48));
-                buffer[state.position++] = ((byte)(value >> 56));
-            }
+
+            BinaryPrimitives.WriteUInt64LittleEndian(buffer.Slice(state.position), value);
+            state.position += length;
         }
 
         // This method is intentionally not marked as "AggressiveInlining", because it slows down
@@ -404,11 +360,11 @@ namespace Google.Protobuf
         // thw WriteRawTag invocations in InternalWriteTo method get inlined too deep and that makes
         // skipping fields which are not present more expensive (which is especially constly for
         // messages with lots of fields of which only a few are present).
-        public static void WriteRawByte(ref Span<byte> buffer, ref WriterInternalState state, byte value)
+        private static void WriteRawByte(ref Span<byte> buffer, ref WriterInternalState state, byte value)
         {
-            if (state.position == state.limit)
+            if (state.position == buffer.Length)
             {
-                WriteBufferHelper.RefreshBuffer(ref buffer, ref state);
+                WriteBufferHelper.RefreshBuffer(ref buffer, ref state, minimumLength: 1);
             }
 
             buffer[state.position++] = value;
@@ -417,7 +373,6 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes out an array of bytes.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteRawBytes(ref Span<byte> buffer, ref WriterInternalState state, byte[] value)
         {
             WriteRawBytes(ref buffer, ref state, new ReadOnlySpan<byte>(value));
@@ -426,7 +381,6 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes out part of an array of bytes.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteRawBytes(ref Span<byte> buffer, ref WriterInternalState state, byte[] value, int offset, int length)
         {
             WriteRawBytes(ref buffer, ref state, new ReadOnlySpan<byte>(value, offset, length));
@@ -435,10 +389,9 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes out part of an array of bytes.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteRawBytes(ref Span<byte> buffer, ref WriterInternalState state, ReadOnlySpan<byte> value)
         {
-            if (state.limit - state.position >= value.Length)
+            if (buffer.Length - state.position >= value.Length)
             {
                 // We have room in the current buffer.    
                 value.CopyTo(buffer.Slice(state.position, value.Length));
@@ -453,13 +406,13 @@ namespace Google.Protobuf
                 // Current this is not being done to avoid specialcasing the code for
                 // CodedOutputStream vs IBufferWriter<byte>.
                 int bytesWritten = 0;
-                while (state.limit - state.position < value.Length - bytesWritten)
+                while (buffer.Length - state.position < value.Length - bytesWritten)
                 {
-                    int length = state.limit - state.position;
+                    int length = buffer.Length - state.position;
                     value.Slice(bytesWritten, length).CopyTo(buffer.Slice(state.position, length));
                     bytesWritten += length;
                     state.position += length;
-                    WriteBufferHelper.RefreshBuffer(ref buffer, ref state);
+                    WriteBufferHelper.RefreshBuffer(ref buffer, ref state, minimumLength: 0);
                 }
 
                 // copy the remaining data
@@ -474,7 +427,6 @@ namespace Google.Protobuf
         /// <summary>
         /// Encodes and writes a tag.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteTag(ref Span<byte> buffer, ref WriterInternalState state, int fieldNumber, WireFormat.WireType type)
         {
             WriteRawVarint32(ref buffer, ref state, WireFormat.MakeTag(fieldNumber, type));
@@ -483,7 +435,6 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes an already-encoded tag.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteTag(ref Span<byte> buffer, ref WriterInternalState state, uint tag)
         {
             WriteRawVarint32(ref buffer, ref state, tag);
@@ -492,56 +443,76 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes the given single-byte tag directly to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteRawTag(ref Span<byte> buffer, ref WriterInternalState state, byte b1)
         {
-            WriteRawByte(ref buffer, ref state, b1);
+            if (state.position == buffer.Length)
+            {
+                WriteBufferHelper.RefreshBuffer(ref buffer, ref state, minimumLength: 1);
+            }
+
+            buffer[state.position++] = b1;
         }
 
         /// <summary>
         /// Writes the given two-byte tag directly to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteRawTag(ref Span<byte> buffer, ref WriterInternalState state, byte b1, byte b2)
         {
-            WriteRawByte(ref buffer, ref state, b1);
-            WriteRawByte(ref buffer, ref state, b2);
+            if (state.position + 2 > buffer.Length)
+            {
+                WriteBufferHelper.RefreshBuffer(ref buffer, ref state, minimumLength: 2);
+            }
+
+            buffer[state.position++] = b1;
+            buffer[state.position++] = b2;
         }
 
         /// <summary>
         /// Writes the given three-byte tag directly to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteRawTag(ref Span<byte> buffer, ref WriterInternalState state, byte b1, byte b2, byte b3)
         {
-            WriteRawByte(ref buffer, ref state, b1);
-            WriteRawByte(ref buffer, ref state, b2);
-            WriteRawByte(ref buffer, ref state, b3);
+            if (state.position + 3 > buffer.Length)
+            {
+                WriteBufferHelper.RefreshBuffer(ref buffer, ref state, minimumLength: 3);
+            }
+
+            buffer[state.position++] = b1;
+            buffer[state.position++] = b2;
+            buffer[state.position++] = b3;
         }
 
         /// <summary>
         /// Writes the given four-byte tag directly to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteRawTag(ref Span<byte> buffer, ref WriterInternalState state, byte b1, byte b2, byte b3, byte b4)
         {
-            WriteRawByte(ref buffer, ref state, b1);
-            WriteRawByte(ref buffer, ref state, b2);
-            WriteRawByte(ref buffer, ref state, b3);
-            WriteRawByte(ref buffer, ref state, b4);
+            if (state.position + 4 > buffer.Length)
+            {
+                WriteBufferHelper.RefreshBuffer(ref buffer, ref state, minimumLength: 4);
+            }
+
+            buffer[state.position++] = b1;
+            buffer[state.position++] = b2;
+            buffer[state.position++] = b3;
+            buffer[state.position++] = b4;
         }
 
         /// <summary>
         /// Writes the given five-byte tag directly to the stream.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteRawTag(ref Span<byte> buffer, ref WriterInternalState state, byte b1, byte b2, byte b3, byte b4, byte b5)
         {
-            WriteRawByte(ref buffer, ref state, b1);
-            WriteRawByte(ref buffer, ref state, b2);
-            WriteRawByte(ref buffer, ref state, b3);
-            WriteRawByte(ref buffer, ref state, b4);
-            WriteRawByte(ref buffer, ref state, b5);
+            if (state.position + 5 > buffer.Length)
+            {
+                WriteBufferHelper.RefreshBuffer(ref buffer, ref state, minimumLength: 5);
+            }
+
+            buffer[state.position++] = b1;
+            buffer[state.position++] = b2;
+            buffer[state.position++] = b3;
+            buffer[state.position++] = b4;
+            buffer[state.position++] = b5;
         }
         #endregion
 

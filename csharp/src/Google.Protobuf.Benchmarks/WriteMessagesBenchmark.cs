@@ -35,8 +35,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Buffers;
 using Google.Protobuf.WellKnownTypes;
+using Google.Protobuf.Buffers;
 
 namespace Google.Protobuf.Benchmarks
 {
@@ -77,6 +77,11 @@ namespace Google.Protobuf.Benchmarks
             return manyWrapperFieldsTest.WriteToSpan_PreAllocatedBuffer();
         }
 
+        [Benchmark]
+        public void ManyWrapperFieldsMessage_WriteToBufferWriter()
+        {
+            manyWrapperFieldsTest.WriteToBufferWriter_PreAllocatedBuffer();
+        }
 
         [Benchmark]
         public byte[] ManyPrimitiveFieldsMessage_ToByteArray()
@@ -94,6 +99,12 @@ namespace Google.Protobuf.Benchmarks
         public byte[] ManyPrimitiveFieldsMessage_WriteToSpan()
         {
             return manyPrimitiveFieldsTest.WriteToSpan_PreAllocatedBuffer();
+        }
+
+        [Benchmark]
+        public void ManyPrimitiveFieldsMessage_WriteToBufferWriter()
+        {
+            manyPrimitiveFieldsTest.WriteToBufferWriter_PreAllocatedBuffer();
         }
 
         [Benchmark]
@@ -142,11 +153,20 @@ namespace Google.Protobuf.Benchmarks
             manyPrimitiveFieldsTest.WriteDelimitedMessagesToSpan_PreAllocatedBuffer(messageCount);
         }
 
+        [Benchmark]
+        [ArgumentsSource(nameof(MessageCountValues))]
+        public void ManyPrimitiveFieldsMessage_WriteDelimitedMessagesToBufferWriter(int messageCount)
+        {
+            manyPrimitiveFieldsTest.WriteDelimitedMessagesToBufferWriter_PreAllocatedBuffer(messageCount);
+        }
+
         private class SubTest
         {
             private readonly IMessage message;
             private readonly byte[] outputBuffer;
+            private readonly ArrayBufferWriter<byte> outputBufferWriter;
             private readonly byte[] multipleMessagesOutputBuffer;
+            private readonly ArrayBufferWriter<byte> multipleMessagesOutputBufferWriter;
 
             public SubTest(IMessage message, int maxMessageCount)
             {
@@ -154,7 +174,11 @@ namespace Google.Protobuf.Benchmarks
 
                 int messageSize = message.CalculateSize();
                 this.outputBuffer = new byte[messageSize];
-                this.multipleMessagesOutputBuffer = new byte[maxMessageCount * (messageSize + CodedOutputStream.ComputeLengthSize(messageSize))];
+                this.outputBufferWriter = new ArrayBufferWriter<byte>(messageSize);
+
+                var multipleMessagesBufferSize = maxMessageCount * (messageSize + CodedOutputStream.ComputeLengthSize(messageSize));
+                this.multipleMessagesOutputBuffer = new byte[multipleMessagesBufferSize];
+                this.multipleMessagesOutputBufferWriter = new ArrayBufferWriter<byte>(multipleMessagesBufferSize);
             }
 
             public byte[] ToByteArray() => message.ToByteArray();
@@ -171,6 +195,12 @@ namespace Google.Protobuf.Benchmarks
                 var span = new Span<byte>(outputBuffer);  // use pre-existing output buffer
                 message.WriteTo(span);
                 return outputBuffer;
+            }
+
+            public void WriteToBufferWriter_PreAllocatedBuffer()
+            {
+                outputBufferWriter.Reset();
+                message.WriteTo(outputBufferWriter);
             }
 
             public byte[] WriteDelimitedMessagesToCodedOutputStream_PreAllocatedBuffer(int messageCount)
@@ -192,6 +222,17 @@ namespace Google.Protobuf.Benchmarks
                     ctx.WriteMessage(message);
                 }
                 return multipleMessagesOutputBuffer;
+            }
+
+            public void WriteDelimitedMessagesToBufferWriter_PreAllocatedBuffer(int messageCount)
+            {
+                multipleMessagesOutputBufferWriter.Reset();
+
+                WriteContext.Initialize(multipleMessagesOutputBufferWriter, out WriteContext ctx);
+                for (int i = 0; i < messageCount; i++)
+                {
+                    ctx.WriteMessage(message);
+                }
             }
         }
     }

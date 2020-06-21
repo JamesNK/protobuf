@@ -64,6 +64,11 @@ namespace Google.Protobuf
         /// </summary>
         public static readonly int DefaultBufferSize = 4096;
 
+        // Minimum required buffer size. A minimum is required because this allows us to optimize
+        // writing primitives by knowing there will be enough space in the buffer after refreshing it.
+        // 128 length was chosen because of minimum size prior art in System.IO.StreamWriter.
+        internal static readonly int MinimumBufferSize = 128;
+
         private readonly bool leaveOpen;
         private readonly byte[] buffer;
         private WriterInternalState state;
@@ -120,7 +125,7 @@ namespace Google.Protobuf
         /// </summary>
         /// <param name="output">The stream to write to. It will be disposed when the returned <c>CodedOutputStream is disposed.</c></param>
         /// <param name="bufferSize">The size of buffer to use internally.</param>
-        public CodedOutputStream(Stream output, int bufferSize) : this(output, new byte[bufferSize], false)
+        public CodedOutputStream(Stream output, int bufferSize) : this(output, new byte[Math.Max(bufferSize, MinimumBufferSize)], false)
         {
         }
 
@@ -142,7 +147,7 @@ namespace Google.Protobuf
         /// <param name="bufferSize">The size of buffer to use internally.</param>
         /// <param name="leaveOpen">If <c>true</c>, <paramref name="output"/> is left open when the returned <c>CodedOutputStream</c> is disposed;
         /// if <c>false</c>, the provided stream is disposed as well.</param>
-        public CodedOutputStream(Stream output, int bufferSize, bool leaveOpen) : this(output, new byte[bufferSize], leaveOpen)
+        public CodedOutputStream(Stream output, int bufferSize, bool leaveOpen) : this(output, new byte[Math.Max(bufferSize, MinimumBufferSize)], leaveOpen)
         {
         }
         #endregion
