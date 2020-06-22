@@ -100,7 +100,7 @@ namespace Google.Protobuf
                     Assert.AreEqual(data, rawOutput.ToArray());
 
                     var bufferWriter = new ArrayBufferWriter<byte>();
-                    bufferWriter.MaxGrowBy = bufferSize;
+                    bufferWriter.MaxBufferSize = bufferSize;
                     WriteContext.Initialize(bufferWriter, out WriteContext ctx);
                     ctx.WriteUInt32((uint) value);
                     ctx.Flush();
@@ -115,7 +115,7 @@ namespace Google.Protobuf
                     Assert.AreEqual(data, rawOutput.ToArray());
 
                     var bufferWriter = new ArrayBufferWriter<byte>();
-                    bufferWriter.MaxGrowBy = bufferSize;
+                    bufferWriter.MaxBufferSize = bufferSize;
                     WriteContext.Initialize(bufferWriter, out WriteContext ctx);
                     ctx.WriteUInt64(value);
                     ctx.Flush();
@@ -190,7 +190,7 @@ namespace Google.Protobuf
                 Assert.AreEqual(data, rawOutput.ToArray());
 
                 var bufferWriter = new ArrayBufferWriter<byte>();
-                bufferWriter.MaxGrowBy = bufferSize;
+                bufferWriter.MaxBufferSize = bufferSize;
                 WriteContext.Initialize(bufferWriter, out WriteContext ctx);
                 ctx.WriteFixed32(value);
                 ctx.Flush();
@@ -228,7 +228,7 @@ namespace Google.Protobuf
                 Assert.AreEqual(data, rawOutput.ToArray());
 
                 var bufferWriter = new ArrayBufferWriter<byte>();
-                bufferWriter.MaxGrowBy = blockSize;
+                bufferWriter.MaxBufferSize = blockSize;
                 WriteContext.Initialize(bufferWriter, out WriteContext ctx);
                 ctx.WriteFixed64(value);
                 ctx.Flush();
@@ -270,7 +270,7 @@ namespace Google.Protobuf
                 Assert.AreEqual(rawBytes, rawOutput.ToArray());
 
                 var bufferWriter = new ArrayBufferWriter<byte>();
-                bufferWriter.MaxGrowBy = blockSize;
+                bufferWriter.MaxBufferSize = blockSize;
                 message.WriteTo(bufferWriter);
                 Assert.AreEqual(rawBytes, bufferWriter.WrittenSpan.ToArray()); 
             }

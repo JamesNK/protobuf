@@ -31,11 +31,11 @@
 #endregion
 
 using BenchmarkDotNet.Attributes;
+using Google.Protobuf.Buffers;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
-using System.Buffers;
 using System.Text;
 
 namespace Google.Protobuf.Benchmarks
@@ -65,6 +65,8 @@ namespace Google.Protobuf.Benchmarks
         // the buffer to which all the data will be written
         byte[] outputBuffer;
 
+        ArrayBufferWriter<byte> outputBufferWriter;
+
         Random random = new Random(417384220);  // random but deterministic seed
 
         public IEnumerable<int> StringEncodedSizes => new[] { 1, 4, 10, 105, 10080 };
@@ -75,6 +77,7 @@ namespace Google.Protobuf.Benchmarks
         public void GlobalSetup()
         {
             outputBuffer = new byte[BytesToWrite];
+            outputBufferWriter = new ArrayBufferWriter<byte>(BytesToWrite);
 
             varint32Values = new Dictionary<int, uint[]>();
             varint64Values = new Dictionary<int, ulong[]>();
@@ -383,6 +386,23 @@ namespace Google.Protobuf.Benchmarks
         }
 
         [Benchmark]
+        [ArgumentsSource(nameof(StringEncodedSizes))]
+        public void WriteString_WriteContextBufferWriter_LimitBufferSize(int encodedSize)
+        {
+            outputBufferWriter.Reset();
+            // Limit buffer size so content will span buffers
+            outputBufferWriter.MaxBufferSize = 1024;
+
+            var values = stringValues[encodedSize];
+            WriteContext.Initialize(outputBufferWriter, out WriteContext ctx);
+            for (int i = 0; i < values.Length; i++)
+            {
+                ctx.WriteString(values[i]);
+            }
+            ctx.Flush();
+        }
+
+        [Benchmark]
         [ArgumentsSource(nameof(NonAsciiStringEncodedSizes))]
         public void WriteNonAsciiString_CodedOutputStream(int encodedSize)
         {
@@ -438,6 +458,23 @@ namespace Google.Protobuf.Benchmarks
             }
             ctx.Flush();
             ctx.CheckNoSpaceLeft();
+        }
+
+        [Benchmark]
+        [ArgumentsSource(nameof(StringEncodedSizes))]
+        public void WriteBytes_WriteContextBufferWriter_LimitBufferSize(int encodedSize)
+        {
+            outputBufferWriter.Reset();
+            // Limit buffer size so content will span buffers
+            outputBufferWriter.MaxBufferSize = 1024;
+
+            var values = byteStringValues[encodedSize];
+            WriteContext.Initialize(outputBufferWriter, out WriteContext ctx);
+            for (int i = 0; i < values.Length; i++)
+            {
+                ctx.WriteBytes(values[i]);
+            }
+            ctx.Flush();
         }
 
         private static uint[] CreateRandomVarints32(Random random, int valueCount, int encodedSize)

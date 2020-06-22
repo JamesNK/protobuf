@@ -46,7 +46,6 @@ namespace Google.Protobuf.Buffers
     {
         private T[] _buffer;
         private int _index;
-        private int? _maxGrowBy;
         private const int DefaultInitialBufferSize = 256;
 
         /// <summary>
@@ -61,13 +60,9 @@ namespace Google.Protobuf.Buffers
 
         /// <summary>
         /// Userful for testing writing to buffer writer with a lot of small segments.
-        /// If set, it limits the max number of bytes by which the buffer grows by at once.
+        /// If set, it limits the max number of bytes in a buffer. Overriden by hintSize.
         /// </summary>
-        public int? MaxGrowBy
-        {
-            get => _maxGrowBy;
-            set => _maxGrowBy = value != null ? Math.Max(value.Value, CodedOutputStream.MinimumBufferSize) : (int?)null;
-        }
+        public int? MaxBufferSize { get; set; }
 
         /// <summary>
         /// Reset index to the start so the writer can be reused.
@@ -172,7 +167,15 @@ namespace Google.Protobuf.Buffers
         {
             CheckAndResizeBuffer(sizeHint);
             Debug.Assert(_buffer.Length > _index);
-            return _buffer.AsMemory(_index);
+
+            if (MaxBufferSize == null)
+            {
+                return _buffer.AsMemory(_index);
+            }
+
+            var bufferLength = Math.Max(sizeHint, MaxBufferSize.Value);
+            bufferLength = Math.Min(_buffer.Length - _index, bufferLength);
+            return _buffer.AsMemory(_index, bufferLength);
         }
 
         /// <summary>
@@ -195,7 +198,15 @@ namespace Google.Protobuf.Buffers
         {
             CheckAndResizeBuffer(sizeHint);
             Debug.Assert(_buffer.Length > _index);
-            return _buffer.AsSpan(_index);
+
+            if (MaxBufferSize == null)
+            {
+                return _buffer.AsSpan(_index);
+            }
+
+            var bufferLength = Math.Max(sizeHint, MaxBufferSize.Value);
+            bufferLength = Math.Min(_buffer.Length - _index, bufferLength);
+            return _buffer.AsSpan(_index, bufferLength);
         }
 
         private void CheckAndResizeBuffer(int sizeHint)
@@ -215,12 +226,6 @@ namespace Google.Protobuf.Buffers
                 if (_buffer.Length == 0)
                 {
                     growBy = Math.Max(growBy, DefaultInitialBufferSize);
-                }
-
-                // enable tests that write to small buffer segments
-                if (MaxGrowBy.HasValue && growBy > MaxGrowBy.Value)
-                {
-                    growBy = MaxGrowBy.Value;
                 }
 
                 int newSize = checked(_buffer.Length + growBy);
