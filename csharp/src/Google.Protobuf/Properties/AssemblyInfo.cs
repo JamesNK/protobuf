@@ -41,6 +41,8 @@ using System.Security;
 [assembly: AllowPartiallyTrustedCallers]
 #endif
 
+//[module: SkipLocalsInit]
+
 [assembly: InternalsVisibleTo("Google.Protobuf.Test, PublicKey=" +
     "002400000480000094000000060200000024000052534131000400000100010025800fbcfc63a1" +
     "7c66b303aae80b03a6beaa176bb6bef883be436f2a1579edd80ce23edf151a1f4ced97af83abcd" +

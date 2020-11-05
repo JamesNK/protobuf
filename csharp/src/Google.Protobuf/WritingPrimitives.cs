@@ -61,7 +61,7 @@ namespace Google.Protobuf
         /// <summary>
         /// Writes a float field value, without a tag, to the stream.
         /// </summary>
-        public static unsafe void WriteFloat(ref Span<byte> buffer, ref WriterInternalState state, float value)
+        public static void WriteFloat(ref Span<byte> buffer, ref WriterInternalState state, float value)
         {
             const int length = sizeof(float);
             if (buffer.Length - state.position >= length)
