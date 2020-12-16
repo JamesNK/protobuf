@@ -32,6 +32,7 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #if NET5_0
@@ -168,6 +169,32 @@ namespace Google.Protobuf
         /// </summary>
         public static void WriteString(ref Span<byte> buffer, ref WriterInternalState state, string value)
         {
+#if !NETSTANDARD1_1
+            // The string is small enough that the length will always be a 1 byte varint.
+            // Also the is enough space to write length + bytes to buffer.
+            // Write string directly to the buffer, and then write length.
+            int maxByteCount = Utf8Encoding.GetMaxByteCount(value.Length);
+            if (maxByteCount < 128 && buffer.Length - state.position - 1 >= maxByteCount)
+            {
+                ReadOnlySpan<char> source = value.AsSpan();
+                int bytesUsed;
+                unsafe
+                {
+                    fixed (char* sourceChars = &MemoryMarshal.GetReference(source))
+                    fixed (byte* destinationBytes = &MemoryMarshal.GetReference(buffer.Slice(state.position + 1)))
+                    {
+                        bytesUsed = Utf8Encoding.GetBytes(sourceChars, source.Length, destinationBytes, buffer.Length);
+                    }
+                }
+
+                Debug.Assert(bytesUsed < 128);
+                buffer[state.position] = (byte)bytesUsed;
+
+                state.position += bytesUsed + 1;
+                return;
+            }
+#endif
+
             // Optimise the case where we have enough space to write
             // the string directly to the buffer, which should be common.
             int length = Utf8Encoding.GetByteCount(value);
