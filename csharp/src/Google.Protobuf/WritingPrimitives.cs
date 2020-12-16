@@ -183,18 +183,19 @@ namespace Google.Protobuf
                         ref byte destinationBytes = ref MemoryMarshal.GetReference(buffer.Slice(state.position));
 
                         // Process 4 chars at a time until there are less than 4 remaining.
-                        int currIdx = 0;
+                        // We already know all characters are ASCII so there is no need to validate the source.
+                        int currentIndex = 0;
                         int lastIndexWhereCanReadFourChars = (2 * value.Length - 8);
                         do
                         {
                             NarrowFourUtf16CharsToAsciiAndWriteToBuffer(
-                                ref Unsafe.AddByteOffset(ref destinationBytes, (IntPtr)(currIdx / 2)),
-                                Unsafe.ReadUnaligned<ulong>(ref Unsafe.AddByteOffset(ref sourceBytes, (IntPtr)currIdx)));
+                                ref Unsafe.AddByteOffset(ref destinationBytes, (IntPtr)(currentIndex / 2)),
+                                Unsafe.ReadUnaligned<ulong>(ref Unsafe.AddByteOffset(ref sourceBytes, (IntPtr)currentIndex)));
 
-                        } while ((currIdx += 8) <= lastIndexWhereCanReadFourChars);
+                        } while ((currentIndex += 8) <= lastIndexWhereCanReadFourChars);
 
                         // Process remainder.
-                        for (int i = currIdx / 2; i < length; i++)
+                        for (int i = currentIndex / 2; i < length; i++)
                         {
                             buffer[state.position + i] = (byte)value[i];
                         }
